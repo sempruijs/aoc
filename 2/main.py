@@ -22,6 +22,7 @@ def valid_password_one(password, letter, min, max):
     return min <= times_in_password <= max
 
 
+# ^ means A or B but not A and B
 def valid_password_two(password, letter, min, max):
     return (list(password)[min - 1] == letter) ^ (list(password)[max - 1] == letter)
 
