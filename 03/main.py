@@ -47,5 +47,3 @@ def loop_trough_lines(right, down):
 total_trees_encountered = loop_trough_lines(1, 1) * loop_trough_lines(3, 1) * loop_trough_lines(5, 1) * loop_trough_lines(7, 1) * loop_trough_lines(1, 2)
 
 print(total_trees_encountered)
-
-#1138190130
