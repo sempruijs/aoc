@@ -8,7 +8,7 @@ for line in file:
 file.close()
 
 # Variables
-trees_encountert = 0
+total_trees_encountered = 0
 current_position = 0
 
 
@@ -29,10 +29,23 @@ def calculated_position(right):
     return counter
 
 
-for line in lines:
-    if encounter_tree(line, current_position):
-        trees_encountert += 1
+def loop_trough_lines(right, down):
+    global current_position
+    current_position = 0
+    index = 0
+    trees_encountert = 0
+    for line in lines:
+        if index % down == 0:
+            if encounter_tree(line, current_position):
+                trees_encountert += 1
 
-    current_position = calculated_position(3)
+            current_position = calculated_position(right)
+        index += 1
+    return trees_encountert
 
-print(trees_encountert)
+
+total_trees_encountered = loop_trough_lines(1, 1) * loop_trough_lines(3, 1) * loop_trough_lines(5, 1) * loop_trough_lines(7, 1) * loop_trough_lines(1, 2)
+
+print(total_trees_encountered)
+
+#1138190130
