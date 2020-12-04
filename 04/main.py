@@ -9,6 +9,7 @@ file.close()
 
 passports = []
 passport_string = ""
+valid_passports = 0
 
 for line in lines:
     if line != "":
@@ -20,4 +21,26 @@ for line in lines:
         passports.append(passport_string)
         passport_string = ""
 
-print (passports)
+# Add last passport
+passports.append(passport_string)
+
+
+def valid_passport(passport):
+    passport_data = passport.split(" ")
+
+    passport_subjects = []
+    for data in passport_data:
+        passport_subjects.append(data.split(":")[0].strip())
+
+    valid_subjects = {"byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"}
+
+    missing_subjects = valid_subjects - set(passport_subjects)
+
+    return len(missing_subjects) == 0
+
+
+for passport in passports:
+    if valid_passport(passport):
+        valid_passports += 1
+
+print(str(valid_passports))
