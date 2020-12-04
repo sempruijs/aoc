@@ -19,9 +19,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2b001b20-24a7-49d9-8aea-647d00ec6a87" name="Default Changelist" comment="Improve calculated_position function">
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-    </list>
+    <list default="true" id="2b001b20-24a7-49d9-8aea-647d00ec6a87" name="Default Changelist" comment="Remove commend" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -40,6 +38,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="preferences.fileTypes" />
   </component>
   <component name="RunManager">
@@ -75,6 +74,7 @@
       <option name="presentableId" value="Default" />
       <updated>1606977070984</updated>
       <workItem from="1606977072236" duration="11988000" />
+      <workItem from="1607019078923" duration="705000" />
     </task>
     <task id="LOCAL-00001" summary="Solve 3.1">
       <created>1606991399540</created>
@@ -90,7 +90,14 @@
       <option name="project" value="LOCAL" />
       <updated>1607016917857</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Remove commend">
+      <created>1607019195389</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1607019195389</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -106,11 +113,13 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Solve 3.1" />
     <MESSAGE value="Improve calculated_position function" />
-    <option name="LAST_COMMIT_MESSAGE" value="Improve calculated_position function" />
+    <MESSAGE value="Remove commend" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove commend" />
   </component>
   <component name="WindowStateProjectService">
     <state width="2518" height="290" key="GridCell.Tab.0.bottom" timestamp="1607018925502">
@@ -141,10 +150,11 @@
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state x="789" y="370" key="SettingsEditor/0.1463.1280.777/0.23.2560.1417/-1440.-494.1440.2537@0.23.2560.1417" timestamp="1606977610024" />
-    <state x="670" y="355" key="Vcs.Push.Dialog.v2" timestamp="1607016918875">
-      <screen x="0" y="0" width="2560" height="1440" />
+    <state x="670" y="372" key="Vcs.Push.Dialog.v2" timestamp="1607019197216">
+      <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state x="670" y="355" key="Vcs.Push.Dialog.v2/0.1440.1280.800/0.0.2560.1440/-1440.-517.1440.2560@0.0.2560.1440" timestamp="1607016918875" />
+    <state x="670" y="372" key="Vcs.Push.Dialog.v2/0.1463.1280.777/0.23.2560.1417/-1440.-494.1440.2537@0.23.2560.1417" timestamp="1607019197216" />
     <state x="440" y="276" key="Vcs.Push.Dialog.v2/0.23.1680.1027@0.23.1680.1027" timestamp="1606991400437" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
