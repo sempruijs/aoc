@@ -13,6 +13,8 @@ file.close()
 # 3     1
 #    2
 rotation = 1
+x = 0
+y = 0
 
 
 def rotate(direction, amount):
@@ -34,3 +36,18 @@ def rotate(direction, amount):
             change_rotation -= 1
 
 
+def forward(amount):
+    global rotation
+    global x
+    global y
+    if rotation == 0:
+        y -= amount
+    elif rotation == 1:
+        x += amount
+    elif rotation == 2:
+        y += amount
+    elif rotation == 3:
+        x -= amount
+
+
+# def follow_instruction(instruction, amount):
