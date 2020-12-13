@@ -7,6 +7,11 @@ for line in file:
     lines.append(line.strip())
 file.close()
 
+empty_lines = 0
+for line in lines:
+    if line == "":
+        empty_lines += 1
+
 passports = []
 passport_string = ""
 valid_passports = 0
