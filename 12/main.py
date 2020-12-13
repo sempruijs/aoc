@@ -27,7 +27,7 @@ def rotate(direction, amount):
             else:
                 rotation = 0
             change_rotation -= 1
-    else:
+    elif direction == "L":
         while change_rotation > 0:
             if rotation > 0:
                 rotation -= 1
@@ -50,4 +50,29 @@ def forward(amount):
         x -= amount
 
 
-# def follow_instruction(instruction, amount):
+def follow_instruction(instruction, amount):
+    global x
+    global y
+    if instruction == "N":
+        y -= amount
+    elif instruction == "E":
+        x += amount
+    elif instruction == "S":
+        y += amount
+    elif instruction == "W":
+        x -= amount
+    elif instruction == "F":
+        forward(amount)
+    else:
+        rotate(instruction, amount)
+
+
+for line in lines:
+    follow_instruction(line[0], int(line[1:]))
+
+if x < 0:
+    x *= -1
+elif y < 0:
+    y *= -1
+
+print(x + y)
