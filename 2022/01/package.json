@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "start": "ts-node ./main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.11",
+    "ts-node": "^10.9.1"
+  }
+}
