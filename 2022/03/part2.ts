@@ -6,6 +6,14 @@ fs.readFile('./input/input.txt', 'utf8', (err: any, data: string) => {
     return;
   }
 
+  function chunks<T>(arr, chunkSize): Array<T> {
+    const res: Array<T> = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+        const chunk = arr.slice(i, i + chunkSize);
+        res.push(chunk);
+    }
+    return res;
+}
 
   function getMatchingChar(a: string, b: string): string {
     for (let i = 0; i < a.length; i++) {
