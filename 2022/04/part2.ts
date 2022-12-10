@@ -33,7 +33,7 @@ fs.readFile('./input/input.txt', 'utf8', (err: any, data: string) => {
   }
 
   const lines = data.split("\n")
-  const totalOverlapping = lines.map(line => lineToIsOverlapping(line)).filter(overlapping => overlapping).length
+  const totalOverlapping = lines.filter(line => lineToIsOverlapping(line)).length
 
   console.log(totalOverlapping)
 });

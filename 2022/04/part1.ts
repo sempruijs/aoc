@@ -16,7 +16,7 @@ fs.readFile('./input/input.txt', 'utf8', (err: any, data: string) => {
   }
 
   const lines = data.split("\n")
-  const uselessJobsAmount = lines.map(line => tuplesContainUseless(lineToTuples(line))).filter(useless => useless).length
+  const uselessJobsAmount = lines.filter(line => tuplesContainUseless(lineToTuples(line))).length
   console.log(uselessJobsAmount)
 
 });
