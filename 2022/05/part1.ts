@@ -13,7 +13,7 @@ fs.readFile('./input/input.txt', 'utf8', (err: any, data: string) => {
 
   function lineWithoutAsciiArt(line: string): string {
     const crateWidth = 3
-    const amountOfStacks = (lines[0].length + 1) / (crateWidth + 1)
+    const amountOfStacks = (line.length + 1) / (crateWidth + 1)
 
     let lineWithoutAsciiArt = ""
     for (let i = 0; i < lines[0].length; i++) {
