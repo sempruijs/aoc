@@ -25,7 +25,7 @@ fs.readFile('./input/input.txt', 'utf8', (err: any, data: string) => {
   }
 
 
-  function transform(stacks: string[][], from: number, to: number, times: number) {
+  function transform(stacks: string[][], from: number, to: number, times: number): string[][] {
     const fromIndex = from - 1
     const toIndex = to - 1    
     const movingCrates = stacks[fromIndex].slice(-times)
