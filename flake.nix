@@ -14,7 +14,7 @@
       devShells = {
         default =
           pkgs.mkShell {
-            buildInputs = with pkgs; [ nodePackages.typescript nodePackages.typescript-language-server nodePackages.ts-node nodejs];
+            buildInputs = with pkgs; [ nodePackages.typescript nodePackages.typescript-language-server nodePackages.ts-node nodejs bacon rnix-lsp hyperfine cargo-flamegraph cargo];
           };
       };
     };
