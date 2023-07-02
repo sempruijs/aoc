@@ -1,12 +1,4 @@
-use std::fs::read_to_string;
-
-fn read_lines(filename: &str) -> Vec<String> {
-    read_to_string(filename)
-        .unwrap() // panic on possible file-reading errors
-        .lines() // split the string into an iterator of string slices
-        .map(String::from) // make each slice into a string
-        .collect() // gather them together into a vector
-}
+use std::include_str;
 
 fn calc_fual(m: u32) -> u32 {
     (m as f32 / 3 as f32).floor() as u32 - 2
@@ -17,7 +9,8 @@ fn line_to_num(l: String) -> u32 {
 }
 
 fn main() {
-    let lines = read_lines("input.txt");
+    let input = include_str!("../../input.txt");
+    let lines: Vec<String> = input.lines().map(String::from).collect();
 
     // let nums = map line_to_num lines
     // let result = sum map calc_fual nums
