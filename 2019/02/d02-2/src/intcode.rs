@@ -1,8 +1,7 @@
 use std::include_str;
-use std::process;
 
 #[derive(Debug, PartialEq)]
-pub struct Code(Vec<usize>);
+struct Code(Vec<usize>);
 
 impl Code {
     pub fn add(&mut self, a: &usize, b: &usize, index: &usize) {
@@ -20,21 +19,13 @@ impl Code {
         self.0[*index] = product;
     }
 
-    pub fn apply_instruction(&mut self, instruction: &Instruction) {
+    pub fn apply_instruction(&mut self, instruction: &Instruction) -> Option<usize> {
         match instruction {
             Instruction::Multiply(a, b, i) => self.multiply(a, b, i),
             Instruction::Add(a, b, i) => self.add(a, b, i),
-            Instruction::Finish => {
-                println!("-- program finished ---\n\nindex 0 is: {}", self.0[0]);
-                process::exit(0);
-            }
+            Instruction::Finish => return Some(self.0[0]),
         };
-    }
-
-    pub fn run_instructions(&mut self, instructions: Vec<Instruction>) {
-        for instruction in instructions {
-            self.apply_instruction(&instruction);
-        }
+        None
     }
 
     pub fn get_chunk(&self, i: usize) -> &[usize] {
@@ -48,13 +39,34 @@ impl Code {
     }
 }
 
-pub enum Instruction {
+enum Instruction {
     Multiply(usize, usize, usize),
     Add(usize, usize, usize),
     Finish,
 }
 
-pub fn list_to_instruction(list: &[usize]) -> Instruction {
+pub fn intcode(noun: usize, verb: usize) -> usize {
+    let puzzle_input = include_str!("../../input.txt");
+    let numbers: Vec<usize> = puzzle_input
+        .split(",")
+        .collect::<Vec<&str>>()
+        .iter()
+        .map(|s| s.trim().parse().unwrap())
+        .collect();
+
+    let mut code = numbers_to_code(numbers, noun, verb);
+
+    for i in 0..code.amount_of_instructions() {
+        let instruction = list_to_instruction(code.get_chunk(i));
+        let result = code.apply_instruction(&instruction);
+        if let Some(n) = result {
+            return n;
+        }
+    }
+    panic!("No opcode \"99\" found");
+}
+
+fn list_to_instruction(list: &[usize]) -> Instruction {
     if list.len() == 1 {
         return Instruction::Finish;
     }
@@ -68,21 +80,10 @@ pub fn list_to_instruction(list: &[usize]) -> Instruction {
     }
 }
 
-// fn code_to_instructions(code: &Code) -> Vec<Instruction> {
-//     let lists: Vec<&[i32]> = code.0.chunks(4).collect();
-//     let mut result: Vec<Instruction> = Vec::new();
-
-//     for list in lists {
-//         result.push(list_to_instruction(list));
-//     }
-
-//     result
-// }
-
-pub fn numbers_to_code(ns: Vec<usize>) -> Code {
+fn numbers_to_code(ns: Vec<usize>, noun: usize, verb: usize) -> Code {
     let mut numbers = ns;
-    numbers[1] = 12;
-    numbers[2] = 2;
+    numbers[1] = noun;
+    numbers[2] = verb;
     Code(numbers)
 }
 
