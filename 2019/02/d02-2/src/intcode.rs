@@ -89,19 +89,10 @@ fn numbers_to_code(ns: Vec<usize>, noun: usize, verb: usize) -> Code {
 
 #[cfg(test)]
 mod Tests {
-    use crate::Code;
+    use super::*;
 
     #[test]
-    fn test_add() {
-        let mut code = Code(vec![1, 2, 3]);
-        code.add(&2, &2, &0);
-        assert_eq!(code.0, vec![5, 2, 3]);
-    }
-
-    #[test]
-    fn test_multiply() {
-        let mut code = Code(vec![1, 2, 3]);
-        code.multiply(&3, &2, &0);
-        assert_eq!(code.0, vec![7, 2, 3]);
+    fn test_intcode() {
+        assert_eq!(intcode(12, 2), 3765464);
     }
 }
