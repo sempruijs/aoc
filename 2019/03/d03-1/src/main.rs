@@ -19,6 +19,19 @@ impl Clone for Point {
 struct Line(Point, Point);
 
 impl Line {
+    // this wil make a line that is sorted
+    // meaning that it will only create lines that go from left to right
+    // or from down to up.hgh Wjwww
+    fn from(p1: Point, p2: Point) -> Self {
+        let line = Line(p1.clone(), p2.clone());
+
+        if line.0 .0 > line.1 .0 || line.0 .1 > line.1 .1 {
+            return Line(p2, p1);
+        }
+
+        Line(p1, p2)
+    }
+
     fn dir(&self) -> Dir {
         let (p1, p2) = (&self.0, &self.1);
 
@@ -54,27 +67,38 @@ fn step_to_line(step: Step, from_point: &Point) -> Line {
     let (x, y) = (from_point.0, from_point.1);
 
     match step {
-        Step::Y(steps) => Line(Point(x, y), Point(x, y + steps)),
-        Step::X(steps) => Line(Point(x, y), Point(x + steps, y)),
+        Step::Y(steps) => Line::from(Point(x, y), Point(x, y + steps)),
+        Step::X(steps) => Line::from(Point(x, y), Point(x + steps, y)),
     }
 }
 
-// fn steps_to_line(steps: Vec<Step>) -> Line {
-//     let mut result: Vec<Point> = vec![Point(0, 0)];
+fn between(number: i32, range: (i32, i32)) -> bool {
+    let (a, b) = range;
+    let (low, high) = if a > b { (b, a) } else { (a, b) };
 
-//     for step in steps {
-//         let from_point = result.last().unwrap();
-//         result.extend(step_to_points(step, from_point));
-//     }
-
-//     Line(result)
-// }
+    number >= low && number <= high
+}
 
 fn point_to_distance(p: &Point) -> u32 {
     let (x, y) = (p.0, p.1);
     x.unsigned_abs() + y.unsigned_abs()
 }
 
+impl Into<Step> for &str {
+    fn into(self) -> Step {
+        let (dir, steps) = self.split_at(1);
+        let steps: i32 = steps.parse().unwrap();
+        match dir {
+            "U" => Step::Y(steps),
+            "R" => Step::X(steps),
+            "D" => Step::Y(-steps),
+            "L" => Step::X(-steps),
+            _ => panic!("could not convert dir with intput: {}", dir),
+        }
+    }
+}
+
+//d26
 fn str_to_steps(s: &str) -> Vec<Step> {
     let str_steps: Vec<&str> = s.split(",").collect::<Vec<&str>>();
     let steps: Vec<Step> = str_steps.iter().map(|s| str_to_step(s)).collect();
@@ -95,6 +119,27 @@ fn str_to_step(s: &str) -> Step {
     }
 }
 
+fn lines_to_overlapping_line(l1: &Line, l2: &Line) -> Option<Line> {
+    if l1.dir() != l2.dir() {
+        panic!("Lines are not in the same direction")
+    }
+
+    if l1.1 .0 >= l2.0 .0 || l1.1 .1 >= l2.0 .1 {
+        if l1.dir() == Dir::Horizontal {
+            let p1 = Point(l2.1 .0, l1.0 .1);
+            let p2 = Point(l1.0 .0, l1.0 .1);
+
+            return Some(Line::from(p1, p2));
+        }
+        let p1 = Point(l1.0 .0, l2.0 .1);
+        let p2 = Point(l1.0 .0, l1.1 .1);
+
+        return Some(Line::from(p1, p2));
+    }
+
+    None
+}
+
 fn lines_to_intersection(l1: &Line, l2: &Line) -> Option<Point> {
     if l1.dir() == l2.dir() {
         //their is a possibility that this skips an important intersection
@@ -108,10 +153,17 @@ fn lines_to_intersection(l1: &Line, l2: &Line) -> Option<Point> {
         (l2, l1)
     };
 
-    let x = v_line.0 .0;
-    let y = h_line.0 .1;
+    let between_horizontal = between(v_line.0 .0, (h_line.0 .0, h_line.1 .0));
+    let between_vertical = between(h_line.0 .1, (v_line.0 .1, v_line.1 .1));
 
-    Some(Point(x, y))
+    if between_horizontal && between_vertical {
+        let x = v_line.0 .0;
+        let y = h_line.0 .1;
+
+        return Some(Point(x, y));
+    }
+
+    None
 }
 
 fn steps_to_shape(steps: Vec<Step>) -> Shape {
@@ -153,7 +205,8 @@ fn str_to_shortest_distance(s: &str) -> u32 {
     let mut distances: Vec<u32> = intersections.iter().map(point_to_distance).collect();
 
     distances.sort();
-    distances[1]
+    let distances: Vec<&u32> = distances.iter().filter(move |n| n != &&0).collect();
+    *distances[0]
 }
 
 fn main() {
@@ -166,6 +219,12 @@ fn main() {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_between() {
+        assert!(between(5, (5, 10)));
+        assert!(!between(11, (5, 10)));
+    }
 
     #[test]
     fn test_point_to_distance() {
