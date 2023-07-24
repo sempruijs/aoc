@@ -5,7 +5,7 @@ pub enum Step {
     Y(i32),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Point {
     x: i32,
     y: i32,
@@ -17,7 +17,7 @@ pub enum Dir {
     Vertical,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy)]
 pub struct Line {
     p1: Point,
     p2: Point,
@@ -31,13 +31,11 @@ impl Point {
     pub fn origin() -> Self {
         Point::from(&0, &0)
     }
-}
 
-impl Clone for Point {
-    fn clone(&self) -> Self {
-        Point {
-            x: self.x,
-            y: self.y,
+    pub fn axis(&self, dir: &Dir) -> i32 {
+        match dir {
+            Dir::Horizontal => self.x,
+            Dir::Vertical => self.y,
         }
     }
 }
@@ -50,6 +48,12 @@ impl Step {
         };
 
         Line::from(&from_point, &new_point)
+    }
+}
+
+impl Clone for Line {
+    fn clone(&self) -> Self {
+        Line::from(&self.p1, &self.p2)
     }
 }
 
@@ -76,6 +80,40 @@ impl Line {
             return Dir::Vertical;
         }
         Dir::Horizontal
+    }
+
+    // fn intersects_with(&self, l: &Line) -> Option<Line> {
+    //     if self.dir() == l.dir() {
+    //         // possible overlapping
+    //         return None;
+    //     }
+
+    //     let (h_line, v_line) = match self.dir() {
+    //         Dir::Horizontal => (*self, *l),
+    //         Dir::Vertical => (*l, *self),
+    //     };
+    // }
+
+    fn has_intersection_with(&self, l: &Line) -> bool {
+        if self.dir() == l.dir() {
+            let dir = self.dir();
+            let (low_l, high_l) = match self.p2.axis(&dir) < l.p2.axis(&dir) {
+                true => (self.clone(), *l),
+                false => (*l, *self),
+            };
+
+            return low_l.p2.axis(&dir) >= high_l.p1.axis(&dir);
+        }
+
+        let (h_line, v_line) = match self.dir() {
+            Dir::Horizontal => (*self, *l),
+            Dir::Vertical => (*l, *self),
+        };
+
+        let between_x = h_line.p1.y >= v_line.p1.y && h_line.p1.y <= v_line.p2.y;
+        let between_y = v_line.p1.x <= h_line.p1.x && v_line.p1.x <= h_line.p2.x;
+
+        return between_x && between_y;
     }
 }
 
@@ -141,5 +179,57 @@ mod tests {
         ];
 
         assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    pub fn test_point_dir() {
+        let p = Point::from(&5, &3);
+        let r1 = p.axis(&Dir::Horizontal);
+        let r2 = p.axis(&Dir::Vertical);
+
+        assert_eq!(r1, 5);
+        assert_eq!(r2, 3);
+    }
+
+    #[test]
+    fn test_has_intersection() {
+        // is an vertical line |
+        let l1 = Line::from(&Point::from(&0, &3), &Point::from(&0, &6));
+
+        // is an horizontal line --
+        let l2 = Line::from(&Point::from(&-5, &0), &Point::from(&5, &0));
+
+        // should be false, no intersection
+        let r1 = l1.has_intersection_with(&l2);
+        assert!(!r1);
+
+        // is an horizontal line --
+        let l3 = Line::from(&Point::from(&-5, &0), &Point::from(&5, &0));
+
+        // is an horizontal line --
+        let l4 = Line::from(&Point::from(&3, &0), &Point::from(&10, &0));
+
+        // should be true, has intersection
+        let r2 = l3.has_intersection_with(&l4);
+        assert!(r2);
+
+        // is an vertical line |
+        let l5 = Line::from(&Point::from(&0, &-5), &Point::from(&0, &5));
+
+        // is an vertical line |
+        let l6 = Line::from(&Point::from(&0, &-10), &Point::from(&0, &-5));
+
+        // should be true, has intersection
+        let r3 = l5.has_intersection_with(&l6);
+        assert!(r3);
+
+        // these are the same line compared to eachother,
+        // so it should be true
+        let r4 = l5.has_intersection_with(&l5);
+        assert!(r4);
+
+        // should be false
+        let r5 = l4.has_intersection_with(&l6);
+        assert!(!r5);
     }
 }
