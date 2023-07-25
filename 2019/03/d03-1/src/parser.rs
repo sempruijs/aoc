@@ -1,6 +1,6 @@
 use crate::Step;
 
-fn str_to_steps(s: &str) -> Vec<Step> {
+pub fn str_to_steps(s: &str) -> Vec<Step> {
     let str_steps: Vec<&str> = s.split(",").collect::<Vec<&str>>();
     let steps: Vec<Step> = str_steps.iter().map(|s| str_to_step(s)).collect();
 

@@ -1,3 +1,5 @@
+use parser::str_to_steps;
+
 mod parser;
 
 pub enum Step {
@@ -37,6 +39,10 @@ impl Point {
             Dir::Horizontal => self.x,
             Dir::Vertical => self.y,
         }
+    }
+
+    fn distance(&self) -> u32 {
+        (self.x.abs() + self.y.abs()).try_into().unwrap()
     }
 }
 
@@ -203,9 +209,44 @@ fn steps_to_lines(steps: Vec<Step>) -> Vec<Line> {
     lines
 }
 
+fn lines_to_intersections(lines_1: Vec<Line>, lines_2: Vec<Line>) -> Vec<Point> {
+    let mut result: Vec<Point> = Vec::new();
+
+    for l1 in &lines_1 {
+        for l2 in &lines_2 {
+            if let Some(points) = l1.get_intersections_with(&l2) {
+                result.extend(points);
+            }
+        }
+    }
+
+    result
+}
+
+// removes 0
+fn points_to_shortest_distance(points: Vec<Point>) -> u32 {
+    let mut distances: Vec<u32> = points.iter().map(|p| p.distance()).collect();
+    distances.retain(|n| n != &0);
+    let shortest_distances = distances.iter().min().unwrap();
+
+    *shortest_distances
+}
+
 fn main() {
-    let puzzel_input = include_str!("../../input.txt");
-    println!("{}", puzzel_input);
+    let puzzel_input = include_str!("../../input.txt")
+        .lines()
+        .collect::<Vec<&str>>();
+
+    let steps_1 = str_to_steps(puzzel_input[0]);
+    let steps_2 = str_to_steps(puzzel_input[1]);
+
+    let lines_1 = steps_to_lines(steps_1);
+    let lines_2 = steps_to_lines(steps_2);
+
+    let intersections = lines_to_intersections(lines_1, lines_2);
+    let answer = points_to_shortest_distance(intersections);
+
+    println!("the closest intersection has an distance of: {}", answer);
 }
 
 #[cfg(test)]
@@ -387,5 +428,20 @@ mod tests {
         ]);
 
         assert_eq!(expected_r4, r4);
+    }
+
+    #[test]
+    fn test_point_to_distance() {
+        let p1 = Point::from(&2, &5);
+        let r1 = p1.distance();
+        let expected_r1 = 7;
+
+        assert_eq!(r1, expected_r1);
+
+        let p2 = Point::from(&-2, &5);
+        let r2 = p1.distance();
+        let expected_r2 = 7;
+
+        assert_eq!(r2, expected_r2);
     }
 }
