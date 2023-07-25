@@ -232,21 +232,26 @@ fn points_to_shortest_distance(points: Vec<Point>) -> u32 {
     *shortest_distances
 }
 
-fn main() {
-    let puzzel_input = include_str!("../../input.txt")
-        .lines()
-        .collect::<Vec<&str>>();
+fn input_to_distance(ipt: &str) -> u32 {
+    let input = ipt.lines().collect::<Vec<&str>>();
 
-    let steps_1 = str_to_steps(puzzel_input[0]);
-    let steps_2 = str_to_steps(puzzel_input[1]);
+    let steps_1 = str_to_steps(input[0]);
+    let steps_2 = str_to_steps(input[1]);
 
     let lines_1 = steps_to_lines(steps_1);
     let lines_2 = steps_to_lines(steps_2);
 
     let intersections = lines_to_intersections(lines_1, lines_2);
-    let answer = points_to_shortest_distance(intersections);
+    let distance = points_to_shortest_distance(intersections);
 
-    println!("the closest intersection has an distance of: {}", answer);
+    distance
+}
+
+fn main() {
+    let puzzel_input = include_str!("../../input.txt");
+
+    let answer = input_to_distance(puzzel_input);
+    println!("{}", answer);
 }
 
 #[cfg(test)]
@@ -443,5 +448,14 @@ mod tests {
         let expected_r2 = 7;
 
         assert_eq!(r2, expected_r2);
+    }
+
+    #[test]
+    fn test_input_to_distance() {
+        let ipt_1 = "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83";
+        let r1 = input_to_distance(ipt_1);
+        let expected_r1 = 159;
+
+        assert_eq!(r1, expected_r1);
     }
 }
