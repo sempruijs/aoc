@@ -59,6 +59,10 @@ impl Clone for Line {
 
 impl Line {
     fn from(p1: &Point, p2: &Point) -> Self {
+        if p1.x != p2.x && p1.y != p2.y {
+            panic!("Failed to create line baesd on the folowing inputs:\n\n p1: ({}, {})\n p2: ({},{})\n\n This wil create an diagonal line, which is not allowed.", p1.x, p1.y, p2.x, p2.y);
+        }
+
         let dir_line = Line {
             p1: p1.clone(),
             p2: p2.clone(),
@@ -82,17 +86,44 @@ impl Line {
         Dir::Horizontal
     }
 
-    // fn intersects_with(&self, l: &Line) -> Option<Line> {
-    //     if self.dir() == l.dir() {
-    //         // possible overlapping
-    //         return None;
-    //     }
+    fn to_points(&self) -> Vec<Point> {
+        let dir = self.dir();
+        let range = (self.p1.axis(&dir), self.p2.axis(&dir));
 
-    //     let (h_line, v_line) = match self.dir() {
-    //         Dir::Horizontal => (*self, *l),
-    //         Dir::Vertical => (*l, *self),
-    //     };
-    // }
+        let mut result: Vec<Point> = Vec::new();
+
+        for i in (range.0)..(range.1 + 1) {
+            let p = match dir {
+                Dir::Horizontal => Point::from(&i, &self.p1.y),
+                Dir::Vertical => Point::from(&self.p1.x, &i),
+            };
+
+            result.push(p);
+        }
+
+        result
+    }
+
+    // I choose option instead of returning an empty vec because I found that more readable
+    fn get_intersection_with(&self, l: &Line) -> Option<Vec<Point>> {
+        if self.has_intersection_with(l) {
+            if self.dir() == l.dir() {
+                // some Vec<P>
+            }
+
+            let (h_line, v_line) = match self.dir() {
+                Dir::Horizontal => (*self, *l),
+                Dir::Vertical => (*l, *self),
+            };
+
+            let x = v_line.p1.x;
+            let y = h_line.p1.y;
+            let p = Point::from(&x, &y);
+
+            return Some(vec![p]);
+        }
+        None
+    }
 
     fn has_intersection_with(&self, l: &Line) -> bool {
         if self.dir() == l.dir() {
@@ -156,6 +187,14 @@ mod tests {
         let p2 = Point::from(&0, &-5);
         let result = Line::from(&p1.clone(), &p2.clone());
         assert_eq!(result, Line { p1: p2, p2: p1 });
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_diagnoal_from_line() {
+        let p1 = Point::origin();
+        let p2 = Point::from(&2, &2);
+        let line = Line::from(&p1, &p2);
     }
 
     #[test]
@@ -231,5 +270,18 @@ mod tests {
         // should be false
         let r5 = l4.has_intersection_with(&l6);
         assert!(!r5);
+    }
+
+    #[test]
+    fn test_line_to_points() {
+        let l = Line::from(&Point::from(&-5, &0), &Point::from(&-3, &0));
+        let result = l.to_points();
+        let expected_result = vec![
+            Point::from(&-5, &0),
+            Point::from(&-4, &0),
+            Point::from(&-3, &0),
+        ];
+
+        assert_eq!(result, expected_result);
     }
 }
