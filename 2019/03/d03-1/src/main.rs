@@ -356,5 +356,36 @@ mod tests {
         let expected_r1 = Some(vec![Point::from(&0, &0)]);
 
         assert_eq!(r1, expected_r1);
+
+        let l3 = Line::from(&Point::from(&-5, &0), &Point::from(&5, &0));
+        let l4 = Line::from(&Point::from(&-3, &0), &Point::from(&-3, &5));
+        let r2 = l3.get_intersections_with(&l4);
+        let expected_r2 = Some(vec![Point::from(&-3, &0)]);
+
+        assert_eq!(r2, expected_r2);
+
+        let l5 = Line::from(&Point::from(&-5, &0), &Point::from(&5, &0));
+        let l6 = Line::from(&Point::from(&-3, &0), &Point::from(&0, &0));
+        let r3 = l5.get_intersections_with(&l6);
+        let expected_r3 = Some(vec![
+            Point::from(&-3, &0),
+            Point::from(&-2, &0),
+            Point::from(&-1, &0),
+            Point::from(&0, &0),
+        ]);
+
+        assert_eq!(r3, expected_r3);
+
+        let l7 = Line::from(&Point::from(&0, &-3), &Point::from(&0, &3));
+        let l8 = Line::from(&Point::from(&0, &0), &Point::from(&0, &-5));
+        let r4 = l7.get_intersections_with(&l8);
+        let expected_r4 = Some(vec![
+            Point::from(&0, &-3),
+            Point::from(&0, &-2),
+            Point::from(&0, &-1),
+            Point::from(&0, &0),
+        ]);
+
+        assert_eq!(expected_r4, r4);
     }
 }
