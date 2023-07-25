@@ -105,10 +105,14 @@ impl Line {
     }
 
     // I choose option instead of returning an empty vec because I found that more readable
-    fn get_intersection_with(&self, l: &Line) -> Option<Vec<Point>> {
+    fn get_intersections_with(&self, l: &Line) -> Option<Vec<Point>> {
         if self.has_intersection_with(l) {
             if self.dir() == l.dir() {
-                // some Vec<P>
+                let overlapping_line = self.get_overlapping(&l).unwrap();
+                let points = overlapping_line.to_points();
+
+                // Some Vec<p>
+                return Some(points);
             }
 
             let (h_line, v_line) = match self.dir() {
@@ -142,9 +146,47 @@ impl Line {
         };
 
         let between_x = h_line.p1.y >= v_line.p1.y && h_line.p1.y <= v_line.p2.y;
-        let between_y = v_line.p1.x <= h_line.p1.x && v_line.p1.x <= h_line.p2.x;
+        let between_y = v_line.p1.x >= h_line.p1.x && v_line.p1.x <= h_line.p2.x;
 
-        return between_x && between_y;
+        between_x && between_y
+    }
+
+    // gets the overlapping line of two lines that have the same direction
+    fn get_overlapping(&self, l: &Line) -> Option<Line> {
+        if self.has_intersection_with(l) {
+            if self.dir() != l.dir() {
+                panic!("Lines do not have the same direction");
+            }
+
+            let dir = self.dir();
+
+            let (low_l, high_l) = match self.p2.axis(&dir) < l.p2.axis(&dir) {
+                true => (self, l),
+                false => (l, self),
+            };
+
+            // if a line completely overlaps the other, it should return the smallest line
+            if high_l.p1.axis(&dir) <= low_l.p1.axis(&dir) {
+                return Some(*low_l);
+            } else if low_l.p2.axis(&dir) >= high_l.p2.axis(&dir) {
+                return Some(*high_l);
+            }
+
+            let result = match dir {
+                Dir::Horizontal => Line::from(
+                    &Point::from(&high_l.p1.x, &self.p1.y),
+                    &Point::from(&low_l.p2.x, &self.p1.y),
+                ),
+                Dir::Vertical => Line::from(
+                    &Point::from(&self.p1.x, &low_l.p2.y),
+                    &Point::from(&self.p1.x, &high_l.p1.y),
+                ),
+            };
+
+            return Some(result);
+        }
+
+        None
     }
 }
 
@@ -270,6 +312,11 @@ mod tests {
         // should be false
         let r5 = l4.has_intersection_with(&l6);
         assert!(!r5);
+
+        let l7 = Line::from(&Point::from(&-5, &0), &Point::from(&5, &0));
+        let l8 = Line::from(&Point::from(&0, &-5), &Point::from(&0, &5));
+        let r6 = l7.has_intersection_with(&l8);
+        assert!(r6);
     }
 
     #[test]
@@ -283,5 +330,31 @@ mod tests {
         ];
 
         assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_get_overlapping() {
+        let l1 = Line::from(&Point::from(&0, &-5), &Point::from(&0, &5));
+        let l2 = Line::from(&Point::from(&0, &4), &Point::from(&0, &7));
+        let r1 = l1.get_overlapping(&l2);
+        let expected_r1 = Some(Line::from(&Point::from(&0, &4), &Point::from(&0, &5)));
+
+        assert_eq!(r1, expected_r1);
+
+        let l3 = Line::from(&Point::from(&0, &-5), &Point::from(&0, &3));
+        let r2 = l1.get_overlapping(&l3);
+        let expected_r2 = Some(l3);
+
+        assert_eq!(r2, expected_r2);
+    }
+
+    #[test]
+    fn test_get_intersections_with() {
+        let l1 = Line::from(&Point::from(&-5, &0), &Point::from(&5, &0));
+        let l2 = Line::from(&Point::from(&0, &-5), &Point::from(&0, &5));
+        let r1 = l1.get_intersections_with(&l2);
+        let expected_r1 = Some(vec![Point::from(&0, &0)]);
+
+        assert_eq!(r1, expected_r1);
     }
 }
