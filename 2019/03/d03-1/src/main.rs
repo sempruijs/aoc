@@ -1,7 +1,10 @@
+use std::fmt::Display;
+
 use parser::str_to_steps;
 
 mod parser;
 
+#[derive(Debug, PartialEq)]
 pub enum Step {
     X(i32),
     Y(i32),
@@ -23,6 +26,51 @@ pub enum Dir {
 pub struct Line {
     p1: Point,
     p2: Point,
+}
+
+impl Display for Step {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let result = match &self {
+            Step::X(amount) => {
+                if amount > &0 {
+                    format!("right ➡️  {}", amount)
+                } else {
+                    format!("left {}", amount)
+                }
+            }
+            Step::Y(amount) => {
+                if amount > &0 {
+                    format!("up  {}", amount)
+                } else {
+                    format!("down {}", amount)
+                }
+            }
+        };
+        write!(f, "{}", result)
+    }
+}
+
+impl Display for Dir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let result = match self {
+            Dir::Horizontal => "horizontal",
+            Dir::Vertical => "vertical",
+        };
+
+        write!(f, "{}", result)
+    }
+}
+
+impl Display for Line {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "-- {} --\n{} -> {}\n", self.dir(), self.p1, self.p2)
+    }
+}
+
+impl Display for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
 }
 
 impl Point {
@@ -69,12 +117,7 @@ impl Line {
             panic!("Failed to create line baesd on the folowing inputs:\n\n p1: ({}, {})\n p2: ({},{})\n\n This wil create an diagonal line, which is not allowed.", p1.x, p1.y, p2.x, p2.y);
         }
 
-        let dir_line = Line {
-            p1: p1.clone(),
-            p2: p2.clone(),
-        };
-
-        let (small_p, big_p) = match &p1.x > &p2.x || &p1.y > &p2.y {
+        let (small_p, big_p) = match p1.x > p2.x || p1.y > p2.y {
             true => (p2, p1),
             false => (p1, p2),
         };
@@ -202,7 +245,11 @@ fn steps_to_lines(steps: Vec<Step>) -> Vec<Line> {
 
     for step in steps {
         let line = step.to_line(from_point);
-        from_point = line.p2.clone();
+        println!("{}", line);
+        from_point = match step {
+            Step::X(x) => Point::from(&(from_point.x + x), &from_point.y),
+            Step::Y(y) => Point::from(&from_point.x, &(from_point.y + y)),
+        };
         lines.push(line);
     }
 
@@ -226,9 +273,10 @@ fn lines_to_intersections(lines_1: Vec<Line>, lines_2: Vec<Line>) -> Vec<Point> 
 // removes 0
 fn points_to_shortest_distance(points: Vec<Point>) -> u32 {
     let mut distances: Vec<u32> = points.iter().map(|p| p.distance()).collect();
+
+    // dbg!(&distances);
     distances.retain(|n| n != &0);
     let shortest_distances = distances.iter().min().unwrap();
-
     *shortest_distances
 }
 
@@ -242,9 +290,8 @@ fn input_to_distance(ipt: &str) -> u32 {
     let lines_2 = steps_to_lines(steps_2);
 
     let intersections = lines_to_intersections(lines_1, lines_2);
-    let distance = points_to_shortest_distance(intersections);
 
-    distance
+    points_to_shortest_distance(intersections)
 }
 
 fn main() {
