@@ -94,6 +94,15 @@ impl Point {
     }
 }
 
+impl Dir {
+    pub fn reverse(&self) -> Dir {
+        match self {
+            Dir::Horizontal => Dir::Vertical,
+            Dir::Vertical => Dir::Horizontal,
+        }
+    }
+}
+
 impl Step {
     pub fn to_line(&self, from_point: Point) -> Line {
         let new_point = match self {
@@ -161,6 +170,8 @@ impl Line {
                 let points = overlapping_line.to_points();
 
                 // Some Vec<p>
+                println!("bloe");
+                println!("l1: {},l2: {}\n", self, l);
                 return Some(points);
             }
 
@@ -173,6 +184,7 @@ impl Line {
             let y = h_line.p1.y;
             let p = Point::from(&x, &y);
 
+            println!("bla");
             return Some(vec![p]);
         }
         None
@@ -182,11 +194,13 @@ impl Line {
         if self.dir() == l.dir() {
             let dir = self.dir();
             let (low_l, high_l) = match self.p2.axis(&dir) < l.p2.axis(&dir) {
-                true => (self.clone(), *l),
+                true => (*self, *l),
                 false => (*l, *self),
             };
 
-            return low_l.p2.axis(&dir) >= high_l.p1.axis(&dir);
+            return low_l.p2.axis(&dir) >= high_l.p1.axis(&dir)
+                && high_l.p1.axis(&dir) <= low_l.p2.axis(&dir)
+                && high_l.p1.axis(&dir.reverse()) == low_l.p1.axis(&dir.reverse());
         }
 
         let (h_line, v_line) = match self.dir() {
@@ -290,6 +304,9 @@ fn input_to_distance(ipt: &str) -> u32 {
     let lines_2 = steps_to_lines(steps_2);
 
     let intersections = lines_to_intersections(lines_1, lines_2);
+    // for p in &intersections {
+    //     println!("{}", p);
+    // }
 
     points_to_shortest_distance(intersections)
 }
@@ -410,6 +427,11 @@ mod tests {
         let l8 = Line::from(&Point::from(&0, &-5), &Point::from(&0, &5));
         let r6 = l7.has_intersection_with(&l8);
         assert!(r6);
+
+        let l9 = Line::from(&Point::from(&5, &0), &Point::from(&10, &0));
+        let l10 = Line::from(&Point::from(&3, &-5), &Point::from(&7, &-5));
+        let r7 = l9.has_intersection_with(&l10);
+        assert!(!r7);
     }
 
     #[test]
