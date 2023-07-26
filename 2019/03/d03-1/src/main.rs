@@ -170,8 +170,6 @@ impl Line {
                 let points = overlapping_line.to_points();
 
                 // Some Vec<p>
-                println!("bloe");
-                println!("l1: {},l2: {}\n", self, l);
                 return Some(points);
             }
 
@@ -184,7 +182,6 @@ impl Line {
             let y = h_line.p1.y;
             let p = Point::from(&x, &y);
 
-            println!("bla");
             return Some(vec![p]);
         }
         None
@@ -259,7 +256,6 @@ fn steps_to_lines(steps: Vec<Step>) -> Vec<Line> {
 
     for step in steps {
         let line = step.to_line(from_point);
-        println!("{}", line);
         from_point = match step {
             Step::X(x) => Point::from(&(from_point.x + x), &from_point.y),
             Step::Y(y) => Point::from(&from_point.x, &(from_point.y + y)),
@@ -304,9 +300,6 @@ fn input_to_distance(ipt: &str) -> u32 {
     let lines_2 = steps_to_lines(steps_2);
 
     let intersections = lines_to_intersections(lines_1, lines_2);
-    // for p in &intersections {
-    //     println!("{}", p);
-    // }
 
     points_to_shortest_distance(intersections)
 }
@@ -526,5 +519,12 @@ mod tests {
         let expected_r1 = 159;
 
         assert_eq!(r1, expected_r1);
+
+        let ipt_2 =
+            "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7";
+        let r2 = input_to_distance(ipt_2);
+        let expected_r2 = 135;
+
+        assert_eq!(r2, expected_r2);
     }
 }
