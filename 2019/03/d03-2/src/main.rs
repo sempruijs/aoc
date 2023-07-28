@@ -28,6 +28,8 @@ pub struct Line {
     p2: Point,
 }
 
+struct Lines(Vec<Line>);
+
 impl Display for Step {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let result = match &self {
@@ -247,6 +249,13 @@ impl Line {
         }
 
         None
+    }
+
+    fn length(&self) -> u32 {
+        let dir = self.dir();
+        (self.p2.axis(&dir) - self.p1.axis(&dir))
+            .try_into()
+            .unwrap()
     }
 }
 
@@ -508,6 +517,21 @@ mod tests {
         let p2 = Point::from(&-2, &5);
         let r2 = p1.distance();
         let expected_r2 = 7;
+
+        assert_eq!(r2, expected_r2);
+    }
+
+    #[test]
+    fn test_line_to_length() {
+        let l1 = Line::from(&Point::from(&0, &-3), &Point::from(&0, &3));
+        let r1 = l1.length();
+        let expected_r1 = 6;
+
+        assert_eq!(r1, expected_r1);
+
+        let l2 = Line::from(&Point::origin(), &Point::from(&0, &3));
+        let r2 = l2.length();
+        let expected_r2 = 3;
 
         assert_eq!(r2, expected_r2);
     }
