@@ -28,6 +28,7 @@ pub struct Line {
     p2: Point,
 }
 
+#[derive(Debug, PartialEq)]
 struct Lines(Vec<Line>);
 
 struct Intersection<'a> {
@@ -281,7 +282,7 @@ impl Line {
     }
 }
 
-fn steps_to_lines(steps: Vec<Step>) -> Vec<Line> {
+fn steps_to_lines(steps: Vec<Step>) -> Lines {
     let mut from_point = Point::origin();
     let mut lines: Vec<Line> = Vec::new();
 
@@ -294,14 +295,14 @@ fn steps_to_lines(steps: Vec<Step>) -> Vec<Line> {
         lines.push(line);
     }
 
-    lines
+    Lines(lines)
 }
 
-fn lines_to_intersections(lines_1: Vec<Line>, lines_2: Vec<Line>) -> Vec<Point> {
+fn lines_to_intersections(lines_1: Lines, lines_2: Lines) -> Vec<Point> {
     let mut result: Vec<Point> = Vec::new();
 
-    for l1 in &lines_1 {
-        for l2 in &lines_2 {
+    for l1 in &lines_1.0 {
+        for l2 in &lines_2.0 {
             if let Some(points) = l1.get_intersections_with(&l2) {
                 result.extend(points);
             }
@@ -388,10 +389,10 @@ mod tests {
         let steps = vec![Step::X(5), Step::Y(-3)];
         let result = steps_to_lines(steps);
         let expected_points = vec![Point::origin(), Point::from(&5, &0), Point::from(&5, &-3)];
-        let expected_result: Vec<Line> = vec![
+        let expected_result: Lines = Lines(vec![
             Line::from(&expected_points[0], &expected_points[1]),
             Line::from(&expected_points[1], &expected_points[2]),
-        ];
+        ]);
 
         assert_eq!(result, expected_result);
     }
