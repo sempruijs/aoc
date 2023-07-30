@@ -30,6 +30,28 @@ pub struct Line {
 
 struct Lines(Vec<Line>);
 
+struct Intersection<'a> {
+    p: Point,
+    l1: &'a Lines,
+    l2: &'a Lines,
+}
+
+impl<'a> Intersection<'a> {
+    fn from(p: &Point, l1: &'a Lines, l2: &'a Lines) -> Self {
+        Intersection {
+            p: p.clone(),
+            l1: &l1,
+            l2: &l2,
+        }
+    }
+}
+
+impl Lines {
+    fn length(&self) -> u32 {
+        self.0.iter().map(|l| l.length()).sum()
+    }
+}
+
 impl Display for Step {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let result = match &self {
@@ -534,6 +556,19 @@ mod tests {
         let expected_r2 = 3;
 
         assert_eq!(r2, expected_r2);
+    }
+
+    #[test]
+    fn test_lines_to_length() {
+        let lines = Lines(vec![
+            Line::from(&Point::from(&-5, &0), &Point::from(&5, &0)), // 10
+            Line::from(&Point::from(&5, &0), &Point::from(&5, &3)),  // 3
+            Line::from(&Point::from(&5, &3), &Point::from(&10, &3)), // 5
+        ]);
+        let r1 = lines.length();
+        let expected_r1 = 18;
+
+        assert_eq!(r1, expected_r1);
     }
 
     #[test]
