@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, slice::SliceIndex};
 
 use parser::str_to_steps;
 
@@ -22,6 +22,7 @@ pub enum Dir {
     Vertical,
 }
 
+/// not intend for diagnal lines
 #[derive(Debug, PartialEq, Copy)]
 pub struct Line {
     p1: Point,
@@ -37,6 +38,36 @@ struct Intersection<'a> {
     l2: &'a Lines,
 }
 
+struct Intersections<'a>(Vec<Intersection<'a>>);
+
+// impl SliceIndex for Line {
+//     type Output;
+
+//     fn get(self, slice: &T) -> Option<&Self::Output> {
+//         todo!()
+//     }
+
+//     fn get_mut(self, slice: &mut T) -> Option<&mut Self::Output> {
+//         todo!()
+//     }
+
+//     unsafe fn get_unchecked(self, slice: *const T) -> *const Self::Output {
+//         todo!()
+//     }
+
+//     unsafe fn get_unchecked_mut(self, slice: *mut T) -> *mut Self::Output {
+//         todo!()
+//     }
+
+//     fn index(self, slice: &T) -> &Self::Output {
+//         todo!()
+//     }
+
+//     fn index_mut(self, slice: &mut T) -> &mut Self::Output {
+//         todo!()
+//     }
+// }
+
 impl<'a> Intersection<'a> {
     fn from(p: &Point, l1: &'a Lines, l2: &'a Lines) -> Self {
         Intersection {
@@ -45,11 +76,26 @@ impl<'a> Intersection<'a> {
             l2: &l2,
         }
     }
+
+    fn wire_distance(&self) -> u32 {
+        let l1 = self.l1;
+        let l2 = self.l2;
+        let last_line_1 = Line::from(&l1.0.last().unwrap().p1, &self.p);
+        let last_line_2 = Line::from(&l2.0.last().unwrap().p1, &self.p);
+
+        let l1_distance =
+            (l1.distance() - l1.0.last().unwrap().distance()) + last_line_1.distance();
+
+        let l2_distance =
+            (l2.distance() - l2.0.last().unwrap().distance()) + last_line_2.distance();
+
+        l1_distance + l2_distance
+    }
 }
 
 impl Lines {
-    fn length(&self) -> u32 {
-        self.0.iter().map(|l| l.length()).sum()
+    fn distance(&self) -> u32 {
+        self.0.iter().map(|l| l.distance()).sum()
     }
 }
 
@@ -274,7 +320,7 @@ impl Line {
         None
     }
 
-    fn length(&self) -> u32 {
+    fn distance(&self) -> u32 {
         let dir = self.dir();
         (self.p2.axis(&dir) - self.p1.axis(&dir))
             .try_into()
@@ -298,13 +344,16 @@ fn steps_to_lines(steps: Vec<Step>) -> Lines {
     Lines(lines)
 }
 
-fn lines_to_intersections(lines_1: Lines, lines_2: Lines) -> Vec<Point> {
-    let mut result: Vec<Point> = Vec::new();
+fn lines_to_wire_distances(lines_1: Lines, lines_2: Lines) -> Vec<u32> {
+    let mut result: Vec<u32> = Vec::new();
 
-    for l1 in &lines_1.0 {
-        for l2 in &lines_2.0 {
+    for (l1_index, l1) in lines_1.0.iter().enumerate() {
+        for (l2_index, l2) in lines_2.0.iter().enumerate() {
             if let Some(points) = l1.get_intersections_with(&l2) {
-                result.extend(points);
+                for point in points {
+                    let intersection = Intersection::from(&point, &lines_1, &lines_2);
+                    // result.0.push(intersection);
+                }
             }
         }
     }
@@ -312,35 +361,27 @@ fn lines_to_intersections(lines_1: Lines, lines_2: Lines) -> Vec<Point> {
     result
 }
 
-// removes 0
-fn points_to_shortest_distance(points: Vec<Point>) -> u32 {
-    let mut distances: Vec<u32> = points.iter().map(|p| p.distance()).collect();
+// fn input_to_distance(ipt: &str) -> u32 {
+//     let input = ipt.lines().collect::<Vec<&str>>();
 
-    // dbg!(&distances);
-    distances.retain(|n| n != &0);
-    let shortest_distances = distances.iter().min().unwrap();
-    *shortest_distances
-}
+//     let steps_1 = str_to_steps(input[0]);
+//     let steps_2 = str_to_steps(input[1]);
 
-fn input_to_distance(ipt: &str) -> u32 {
-    let input = ipt.lines().collect::<Vec<&str>>();
+//     let lines_1 = steps_to_lines(steps_1);
+//     let lines_2 = steps_to_lines(steps_2);
 
-    let steps_1 = str_to_steps(input[0]);
-    let steps_2 = str_to_steps(input[1]);
+//     let intersections = lines_to_intersections(lines_1, lines_2);
 
-    let lines_1 = steps_to_lines(steps_1);
-    let lines_2 = steps_to_lines(steps_2);
-
-    let intersections = lines_to_intersections(lines_1, lines_2);
-
-    points_to_shortest_distance(intersections)
-}
+//     0
+// }
 
 fn main() {
     let puzzel_input = include_str!("../../input.txt");
 
-    let answer = input_to_distance(puzzel_input);
-    println!("{}", answer);
+    // let answer = input_to_distance(puzzel_input);
+    // println!("{}", answer);
+
+    println!("work in progress");
 }
 
 #[cfg(test)]
@@ -547,13 +588,13 @@ mod tests {
     #[test]
     fn test_line_to_length() {
         let l1 = Line::from(&Point::from(&0, &-3), &Point::from(&0, &3));
-        let r1 = l1.length();
+        let r1 = l1.distance();
         let expected_r1 = 6;
 
         assert_eq!(r1, expected_r1);
 
         let l2 = Line::from(&Point::origin(), &Point::from(&0, &3));
-        let r2 = l2.length();
+        let r2 = l2.distance();
         let expected_r2 = 3;
 
         assert_eq!(r2, expected_r2);
@@ -566,25 +607,44 @@ mod tests {
             Line::from(&Point::from(&5, &0), &Point::from(&5, &3)),  // 3
             Line::from(&Point::from(&5, &3), &Point::from(&10, &3)), // 5
         ]);
-        let r1 = lines.length();
+        let r1 = lines.distance();
         let expected_r1 = 18;
 
         assert_eq!(r1, expected_r1);
     }
 
     #[test]
-    fn test_input_to_distance() {
-        let ipt_1 = "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83";
-        let r1 = input_to_distance(ipt_1);
-        let expected_r1 = 610;
+    fn test_intersection_to_wire_distance() {
+        let l1 = Lines(vec![
+            Line::from(&Point::from(&-5, &0), &Point::from(&5, &0)), // 10
+            Line::from(&Point::from(&5, &0), &Point::from(&5, &3)),  // 3
+        ]);
+
+        let l2 = Lines(vec![
+            Line::from(&Point::from(&-5, &1), &Point::from(&10, &1)), // 15
+        ]);
+
+        let intersection_point = Point::from(&5, &1);
+        let intersection = Intersection::from(&intersection_point, &l1, &l2);
+        let r1 = intersection.wire_distance();
+        let expected_r1 = 11 + 10;
 
         assert_eq!(r1, expected_r1);
-
-        let ipt_2 =
-            "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7";
-        let r2 = input_to_distance(ipt_2);
-        let expected_r2 = 410;
-
-        assert_eq!(r2, expected_r2);
     }
+
+    // #[test]
+    // fn test_input_to_distance() {
+    //     let ipt_1 = "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83";
+    //     let r1 = input_to_distance(ipt_1);
+    //     let expected_r1 = 610;
+
+    //     assert_eq!(r1, expected_r1);
+
+    //     let ipt_2 =
+    //         "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7";
+    //     let r2 = input_to_distance(ipt_2);
+    //     let expected_r2 = 410;
+
+    //     assert_eq!(r2, expected_r2);
+    // }
 }
