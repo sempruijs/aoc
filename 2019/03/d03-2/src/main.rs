@@ -42,22 +42,6 @@ impl<'a> Intersection<'a> {
     fn from(p: &Point, l1: &'a [Line], l2: &'a [Line]) -> Self {
         Intersection { p: *p, l1, l2 }
     }
-
-    fn wire_distance(&self) -> u32 {
-        let l1 = self.l1;
-        let l2 = self.l2;
-        let last_line_1 = Line::from(&l1.last().unwrap().p1, &self.p);
-        let last_line_2 = Line::from(&l2.last().unwrap().p1, &self.p);
-        println!("wire distance works");
-        println!("{}", last_line_1);
-        println!("{}", last_line_2);
-
-        let l1_distance = (distance(l1) - l1.last().unwrap().distance()) + last_line_1.distance();
-
-        let l2_distance = (distance(l2) - l2.last().unwrap().distance()) + last_line_2.distance();
-
-        l1_distance + l2_distance
-    }
 }
 
 impl Lines {
@@ -305,6 +289,12 @@ fn distance(lines: &[Line]) -> u32 {
     result
 }
 
+fn lines_to_wire_distances(l1: &Lines, l2: &Lines) -> Vec<u32> {
+    let mut result: Vec<u32> = Vec::new();
+
+    result
+}
+
 fn steps_to_lines(steps: Vec<Step>) -> Lines {
     let mut from_point = Point::origin();
     let mut lines: Vec<Line> = Vec::new();
@@ -321,28 +311,6 @@ fn steps_to_lines(steps: Vec<Step>) -> Lines {
     Lines(lines)
 }
 
-fn lines_to_wire_distances(lines_1: Lines, lines_2: Lines) -> Vec<u32> {
-    let mut result: Vec<u32> = Vec::new();
-
-    for (l1_index, l1) in lines_1.0.iter().enumerate() {
-        for (l2_index, l2) in lines_2.0.iter().enumerate() {
-            if let Some(points) = l1.get_intersections_with(l2) {
-                if points[0] != Point::origin() {
-                    for point in points {
-                        let lines_1 = &lines_1.0[..l1_index];
-                        let lines_2 = &lines_2.0[..l2_index];
-                        let intersection = Intersection::from(&point, lines_1, lines_2);
-                        result.push(intersection.wire_distance());
-                    }
-                }
-            }
-        }
-    }
-
-    // result.into_iter().filter(|&s| s != 0).collect()
-    result
-}
-
 fn input_to_distance(ipt: &str) -> u32 {
     let input = ipt.lines().collect::<Vec<&str>>();
 
@@ -352,7 +320,7 @@ fn input_to_distance(ipt: &str) -> u32 {
     let lines_1 = steps_to_lines(steps_1);
     let lines_2 = steps_to_lines(steps_2);
 
-    let distances = lines_to_wire_distances(lines_1, lines_2);
+    let distances = lines_to_wire_distances(&lines_1, &lines_2);
 
     dbg!(distances);
 
