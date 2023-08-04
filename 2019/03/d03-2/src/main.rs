@@ -22,32 +22,10 @@ pub enum Dir {
     Vertical,
 }
 
-/// not intend for diagnal lines
 #[derive(Debug, PartialEq, Copy)]
 pub struct Line {
     p1: Point,
     p2: Point,
-}
-
-#[derive(Debug, PartialEq)]
-struct Lines(Vec<Line>);
-
-struct Intersection<'a> {
-    p: Point,
-    l1: &'a [Line],
-    l2: &'a [Line],
-}
-
-impl<'a> Intersection<'a> {
-    fn from(p: &Point, l1: &'a [Line], l2: &'a [Line]) -> Self {
-        Intersection { p: *p, l1, l2 }
-    }
-}
-
-impl Lines {
-    fn distance(&self) -> u32 {
-        self.0.iter().map(|l| l.distance()).sum()
-    }
 }
 
 impl Display for Step {
@@ -270,32 +248,9 @@ impl Line {
 
         None
     }
-
-    fn distance(&self) -> u32 {
-        let dir = self.dir();
-        (self.p2.axis(&dir) - self.p1.axis(&dir))
-            .try_into()
-            .unwrap()
-    }
 }
 
-fn distance(lines: &[Line]) -> u32 {
-    let mut result = 0;
-
-    for line in lines {
-        result += line.distance();
-    }
-
-    result
-}
-
-fn lines_to_wire_distances(l1: &Lines, l2: &Lines) -> Vec<u32> {
-    let mut result: Vec<u32> = Vec::new();
-
-    result
-}
-
-fn steps_to_lines(steps: Vec<Step>) -> Lines {
+fn steps_to_lines(steps: Vec<Step>) -> Vec<Line> {
     let mut from_point = Point::origin();
     let mut lines: Vec<Line> = Vec::new();
 
@@ -308,7 +263,31 @@ fn steps_to_lines(steps: Vec<Step>) -> Lines {
         lines.push(line);
     }
 
-    Lines(lines)
+    lines
+}
+
+fn lines_to_intersections(lines_1: Vec<Line>, lines_2: Vec<Line>) -> Vec<Point> {
+    let mut result: Vec<Point> = Vec::new();
+
+    for l1 in &lines_1 {
+        for l2 in &lines_2 {
+            if let Some(points) = l1.get_intersections_with(&l2) {
+                result.extend(points);
+            }
+        }
+    }
+
+    result
+}
+
+// removes 0
+fn points_to_shortest_distance(points: Vec<Point>) -> u32 {
+    let mut distances: Vec<u32> = points.iter().map(|p| p.distance()).collect();
+
+    // dbg!(&distances);
+    distances.retain(|n| n != &0);
+    let shortest_distances = distances.iter().min().unwrap();
+    *shortest_distances
 }
 
 fn input_to_distance(ipt: &str) -> u32 {
@@ -320,20 +299,16 @@ fn input_to_distance(ipt: &str) -> u32 {
     let lines_1 = steps_to_lines(steps_1);
     let lines_2 = steps_to_lines(steps_2);
 
-    let distances = lines_to_wire_distances(&lines_1, &lines_2);
+    let intersections = lines_to_intersections(lines_1, lines_2);
 
-    dbg!(distances);
-
-    0
+    points_to_shortest_distance(intersections)
 }
 
 fn main() {
     let puzzel_input = include_str!("../../input.txt");
 
     let answer = input_to_distance(puzzel_input);
-    // println!("{}", answer);
-
-    println!("work in progress");
+    println!("{}", answer);
 }
 
 #[cfg(test)]
@@ -382,10 +357,10 @@ mod tests {
         let steps = vec![Step::X(5), Step::Y(-3)];
         let result = steps_to_lines(steps);
         let expected_points = vec![Point::origin(), Point::from(&5, &0), Point::from(&5, &-3)];
-        let expected_result: Lines = Lines(vec![
+        let expected_result: Vec<Line> = vec![
             Line::from(&expected_points[0], &expected_points[1]),
             Line::from(&expected_points[1], &expected_points[2]),
-        ]);
+        ];
 
         assert_eq!(result, expected_result);
     }
@@ -538,64 +513,17 @@ mod tests {
     }
 
     #[test]
-    fn test_line_to_length() {
-        let l1 = Line::from(&Point::from(&0, &-3), &Point::from(&0, &3));
-        let r1 = l1.distance();
-        let expected_r1 = 6;
-
-        assert_eq!(r1, expected_r1);
-
-        let l2 = Line::from(&Point::origin(), &Point::from(&0, &3));
-        let r2 = l2.distance();
-        let expected_r2 = 3;
-
-        assert_eq!(r2, expected_r2);
-    }
-
-    #[test]
-    fn test_lines_to_length() {
-        let lines = Lines(vec![
-            Line::from(&Point::from(&-5, &0), &Point::from(&5, &0)), // 10
-            Line::from(&Point::from(&5, &0), &Point::from(&5, &3)),  // 3
-            Line::from(&Point::from(&5, &3), &Point::from(&10, &3)), // 5
-        ]);
-        let r1 = lines.distance();
-        let expected_r1 = 18;
-
-        assert_eq!(r1, expected_r1);
-    }
-
-    #[test]
-    fn test_intersection_to_wire_distance() {
-        let l1 = Lines(vec![
-            Line::from(&Point::from(&-5, &0), &Point::from(&5, &0)), // 10
-            Line::from(&Point::from(&5, &0), &Point::from(&5, &3)),  // 3
-        ]);
-
-        let l2 = Lines(vec![
-            Line::from(&Point::from(&-5, &1), &Point::from(&10, &1)), // 15
-        ]);
-
-        let intersection_point = Point::from(&5, &1);
-        let intersection = Intersection::from(&intersection_point, &l1.0[..], &l2.0[..]);
-        let r1 = intersection.wire_distance();
-        let expected_r1 = 11 + 10;
-
-        assert_eq!(r1, expected_r1);
-    }
-
-    #[test]
     fn test_input_to_distance() {
         let ipt_1 = "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83";
         let r1 = input_to_distance(ipt_1);
-        let expected_r1 = 610;
+        let expected_r1 = 159;
 
         assert_eq!(r1, expected_r1);
 
         let ipt_2 =
             "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7";
         let r2 = input_to_distance(ipt_2);
-        let expected_r2 = 410;
+        let expected_r2 = 135;
 
         assert_eq!(r2, expected_r2);
     }
