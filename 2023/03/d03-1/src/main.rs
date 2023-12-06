@@ -99,7 +99,6 @@ impl Numbers {
                 if x == line.len() - 1 && current_is_digit {
                     // last char here, so the number ends
                     end_point = Point::from(x as i32, y as i32);
-                    num_string.push(c);
                     let n = Number {
                         value: num_string.parse().unwrap(),
                         start: start_point,
@@ -172,4 +171,27 @@ fn puzzle_input_to_answer(s: &str) -> u32 {
         .collect();
 
     valid_numbers.iter().sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_numbers_from_str() {
+        let str_1 = "123...";
+        let str_2 = "...123";
+        let str_3 = "1.2.3.";
+        let str_4 = ".1.2.3";
+
+        let nums_1_sum: u32 = Numbers::from_str(str_1).0.iter().map(|n| n.value).sum();
+        let nums_2_sum: u32 = Numbers::from_str(str_2).0.iter().map(|n| n.value).sum();
+        let nums_3_sum: u32 = Numbers::from_str(str_3).0.iter().map(|n| n.value).sum();
+        let nums_4_sum: u32 = Numbers::from_str(str_4).0.iter().map(|n| n.value).sum();
+
+        assert_eq!(nums_1_sum, 123);
+        assert_eq!(nums_2_sum, 123);
+        assert_eq!(nums_3_sum, 6);
+        assert_eq!(nums_4_sum, 6);
+    }
 }
