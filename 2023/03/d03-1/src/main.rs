@@ -1,8 +1,9 @@
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::Display;
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 struct Point {
-    x: u32,
-    y: u32,
+    x: i32,
+    y: i32,
 }
 
 impl Display for Point {
@@ -13,17 +14,11 @@ impl Display for Point {
 
 impl Point {
     fn origin() -> Self {
-        Point {
-            x: 0,
-            y: 0,
-        }
+        Point { x: 0, y: 0 }
     }
 
-    pub fn from(x: &u32, y: &u32) -> Self {
-        Point {
-            x: *x,
-            y: *y,
-        }
+    pub fn from(x: i32, y: i32) -> Self {
+        Point { x, y }
     }
 }
 
@@ -32,12 +27,14 @@ struct Bind(Point);
 
 struct Bindables(Vec<Bind>);
 
+#[derive(Debug)]
 struct Number {
     value: u32,
     start: Point,
     end: Point,
 }
 
+#[derive(Debug)]
 struct Numbers(Vec<Number>);
 
 impl Bindables {
@@ -74,55 +71,87 @@ impl Numbers {
         let mut start_point = Point::origin();
         let mut end_point = Point::origin();
 
-        for (y, line) in s.lines() {
+        for (y, line) in s.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
-                if c.is_digit(10) {
+                let previous_is_digit = previous_char.is_digit(10);
+                let current_is_digit = c.is_digit(10);
+
+                if !previous_is_digit && current_is_digit {
+                    // numbers start here
+                    num_string = String::from("");
                     num_string.push(c);
-
-                    // if previous is NOT a digit
-                    if !previous_char.is_digit(10) {
-                        // here the number will begin
-                        start_point = Point::from(&x,&y);
-                    } else if x == line.len() {
-                        //push point
-                        end_point = Point::from(&x, &y);
-                        num_string = String::from("");
-
-                        let n = Number {
-                            value: num_string.parse::<u32>().unwrap(),
-                            start: start_point,
-                            end: end_point,
-                        }
-                        result.push(n);
-                    }
-                } else {
-                    // when it is not a digit
-
-                    if previous_char.is_digit(10) {
-                        // here the number ends, so it should be pushed
-                        // to the list
-                        end_point = Point::from(&(x - 1), &y);
-                        let n = Number {
-                            value: num_string.parse::<u32>().unwrap(),
-                            start: start_point,
-                            end: end_point,
-                        }
-                        // mmmm jammie
-                        result.push(n);
-                    } 
-                    previous_char = c;
+                    start_point = Point::from(x as i32, y as i32);
+                } else if previous_is_digit && current_is_digit {
+                    // reading a number
+                    num_string.push(c);
+                } else if previous_is_digit && !current_is_digit {
+                    // here the number ends
+                    end_point = Point::from((x - 1) as i32, y as i32);
+                    let n = Number {
+                        value: num_string.parse().unwrap(),
+                        start: start_point,
+                        end: end_point,
+                    };
+                    result.push(n);
+                    num_string = String::from("");
                 }
-                // because a new line is comming
-                previous_char = '.';
+
+                if x == line.len() - 1 && current_is_digit {
+                    // last char here, so the number ends
+                    end_point = Point::from(x as i32, y as i32);
+                    num_string.push(c);
+                    let n = Number {
+                        value: num_string.parse().unwrap(),
+                        start: start_point,
+                        end: end_point,
+                    };
+
+                    result.push(n);
+                    num_string = String::from("");
+                }
+                previous_char = c;
             }
+            previous_char = '.';
         }
+        dbg!(&result);
         Numbers(result)
     }
 }
 
 impl Number {
-    pub fn can_bind(&self, matrix: &Bindables) -> bool {
-        true
+    pub fn can_bind(&self, bindables: &Bindables) -> bool {
+        let bindable_points: Vec<Point> = bindables.0.iter().map(|b| b.0).collect();
+        for p in self.bindable_positions() {
+            if bindable_points.contains(&p) {
+                return true;
+            };
+        }
+        false
+    }
+
+    fn bindable_positions(&self) -> Vec<Point> {
+        let x_positions = (self.start.x - 1)..=(self.end.x + 1);
+        let top: Vec<Point> = x_positions
+            .clone()
+            .map(|x| Point::from(x, self.start.y - 1))
+            .collect();
+
+        let bottom: Vec<Point> = x_positions
+            .clone()
+            .map(|x| Point::from(x, self.start.y + 1))
+            .collect();
+
+        let y = self.start.y;
+        let (left, right) = (
+            Point::from(self.start.x - 1, y),
+            Point::from(self.end.x + 1, y),
+        );
+
+        let mut result: Vec<Point> = vec![left, right];
+        result.extend(&top);
+        result.extend(&bottom);
+
+        result
     }
 }
 
