@@ -178,9 +178,6 @@ fn main() {
 
 fn puzzle_input_to_answer(s: &str) -> u32 {
     let numbers = Numbers::from_str(s);
-    let gears = Gears::from_str(s);
-    // let bla: Vec<Option<u32>> = gears.0.iter().map(|g| g.ratio(&numbers)).collect();
-    // dbg!("{}", bla);
     Gears::from_str(s)
         .0
         .iter()
