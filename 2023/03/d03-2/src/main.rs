@@ -1,6 +1,7 @@
+use std::collections::HashSet;
 use std::fmt::Display;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 struct Point {
     x: i32,
     y: i32,
@@ -22,10 +23,11 @@ impl Point {
     }
 }
 
-// a bind is a character that make numbers valid for counting
-struct Bind(Point);
+#[derive(Debug)]
+struct Gear(Point);
 
-struct Bindables(Vec<Bind>);
+#[derive(Debug)]
+struct Gears(Vec<Gear>);
 
 #[derive(Debug)]
 struct Number {
@@ -37,26 +39,65 @@ struct Number {
 #[derive(Debug)]
 struct Numbers(Vec<Number>);
 
-impl Bindables {
+impl Gears {
     pub fn from_str(s: &str) -> Self {
         let char_matrix: Vec<Vec<char>> = s
             .lines()
             .map(|l| l.chars().collect::<Vec<char>>())
             .collect();
 
-        let mut result: Vec<Bind> = Vec::new();
+        let mut result: Vec<Gear> = Vec::new();
 
         for (y, line) in char_matrix.into_iter().enumerate() {
             for (x, c) in line.iter().enumerate() {
-                if c != &'.' && !c.is_digit(10) {
-                    result.push(Bind(Point {
-                        x: x.try_into().unwrap(),
-                        y: y.try_into().unwrap(),
+                if c == &'*' {
+                    result.push(Gear(Point {
+                        x: x as i32,
+                        y: y as i32,
                     }));
                 }
             }
         }
-        Bindables(result)
+        Gears(result)
+    }
+}
+
+impl Gear {
+    pub fn ratio(&self, numbers: &Numbers) -> Option<u32> {
+        let mut binding_values: Vec<u32> = Vec::new();
+        let gear_bind_points = self.bind_locations();
+
+        for number in &numbers.0 {
+            let has_intersection = number
+                .locations()
+                .intersection(&gear_bind_points)
+                .collect::<Vec<&Point>>()
+                .len()
+                > 0;
+
+            if has_intersection {
+                binding_values.push(number.value);
+            }
+        }
+        if binding_values.len() == 2 {
+            let ratio = binding_values[0] * binding_values[1];
+            return Some(ratio);
+        }
+        None
+    }
+
+    fn bind_locations(&self) -> HashSet<Point> {
+        let mut result = HashSet::new();
+        for x in self.0.x - 1..=self.0.x + 1 {
+            for y in self.0.y - 1..=self.0.y + 1 {
+                if x != self.0.x && self.0.y != y {
+                    let p = Point::from(x, y);
+                    result.insert(p);
+                }
+            }
+        }
+
+        result
     }
 }
 
@@ -112,65 +153,39 @@ impl Numbers {
             }
             previous_char = '.';
         }
-        dbg!(&result);
         Numbers(result)
     }
 }
 
 impl Number {
-    pub fn can_bind(&self, bindables: &Bindables) -> bool {
-        let bindable_points: Vec<Point> = bindables.0.iter().map(|b| b.0).collect();
-        for p in self.bindable_positions() {
-            if bindable_points.contains(&p) {
-                return true;
-            };
-        }
-        false
-    }
-
-    fn bindable_positions(&self) -> Vec<Point> {
-        let x_positions = (self.start.x - 1)..=(self.end.x + 1);
-        let top: Vec<Point> = x_positions
-            .clone()
-            .map(|x| Point::from(x, self.start.y - 1))
-            .collect();
-
-        let bottom: Vec<Point> = x_positions
-            .clone()
-            .map(|x| Point::from(x, self.start.y + 1))
-            .collect();
-
+    pub fn locations(&self) -> HashSet<Point> {
+        let mut result = HashSet::new();
         let y = self.start.y;
-        let (left, right) = (
-            Point::from(self.start.x - 1, y),
-            Point::from(self.end.x + 1, y),
-        );
-
-        let mut result: Vec<Point> = vec![left, right];
-        result.extend(&top);
-        result.extend(&bottom);
+        (self.start.x..=self.end.x).for_each(|x| {
+            let p = Point::from(x, y);
+            result.insert(p);
+        });
 
         result
     }
 }
 
 fn main() {
-    let input = include_str!("../../input.txt");
+    let input = include_str!("../../example.txt");
     let answer = puzzle_input_to_answer(input);
     println!("{}", answer);
 }
 
 fn puzzle_input_to_answer(s: &str) -> u32 {
     let numbers = Numbers::from_str(s);
-    let bindables = Bindables::from_str(s);
-    let valid_numbers: Vec<u32> = numbers
+    let gears = Gears::from_str(s);
+    // let bla: Vec<Option<u32>> = gears.0.iter().map(|g| g.ratio(&numbers)).collect();
+    // dbg!("{}", bla);
+    Gears::from_str(s)
         .0
-        .into_iter()
-        .filter(|n| n.can_bind(&bindables))
-        .map(|n| n.value)
-        .collect();
-
-    valid_numbers.iter().sum()
+        .iter()
+        .filter_map(|g| Some(g.ratio(&numbers)).unwrap())
+        .sum()
 }
 
 #[cfg(test)]
@@ -194,4 +209,25 @@ mod tests {
         assert_eq!(nums_3_sum, 6);
         assert_eq!(nums_4_sum, 6);
     }
+
+    #[test]
+    fn test_number_locations() {
+        let n = Number {
+            value: 42,
+            start: Point { x: 3, y: 3 },
+            end: Point { x: 5, y: 3 },
+        };
+
+        let mut locations = HashSet::new();
+        locations.insert(Point::from(3, 3));
+        locations.insert(Point::from(4, 3));
+        locations.insert(Point::from(5, 3));
+
+        assert_eq!(n.locations(), locations);
+    }
+
+    // #[test]
+    // fn test_gear_bind_locations() {
+    //     let gears = Gear(Point { x: 3, y: 3 });
+    // }
 }
