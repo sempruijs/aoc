@@ -90,7 +90,7 @@ impl Gear {
         let mut result = HashSet::new();
         for x in self.0.x - 1..=self.0.x + 1 {
             for y in self.0.y - 1..=self.0.y + 1 {
-                if x != self.0.x && self.0.y != y {
+                if x != self.0.x || self.0.y != y {
                     let p = Point::from(x, y);
                     result.insert(p);
                 }
@@ -171,7 +171,7 @@ impl Number {
 }
 
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = puzzle_input_to_answer(input);
     println!("{}", answer);
 }
@@ -226,8 +226,24 @@ mod tests {
         assert_eq!(n.locations(), locations);
     }
 
-    // #[test]
-    // fn test_gear_bind_locations() {
-    //     let gears = Gear(Point { x: 3, y: 3 });
-    // }
+    #[test]
+    fn test_gear_bind_locations() {
+        let gear_bind_locations = Gear(Point { x: 3, y: 3 }).bind_locations();
+        let mut expected_output: HashSet<Point> = HashSet::new();
+        expected_output.insert(Point::from(2, 2));
+        expected_output.insert(Point::from(2, 3));
+        expected_output.insert(Point::from(2, 4));
+
+        expected_output.insert(Point::from(3, 2));
+        expected_output.insert(Point::from(3, 4));
+
+        expected_output.insert(Point::from(4, 2));
+        expected_output.insert(Point::from(4, 3));
+        expected_output.insert(Point::from(4, 4));
+
+        // dbg!(&expected_output);
+        // dbg!(&gear_bind_locations);
+
+        assert_eq!(gear_bind_locations, expected_output);
+    }
 }
