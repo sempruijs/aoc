@@ -9,7 +9,7 @@ fn main() {
 fn puzzle_input_to_result(s: &str) -> u32 {
     // s.lines().map(|s| Card::from_line(s).points()).sum()
     let cards: Vec<Card> = s.lines().map(|s| Card::from_line(s)).collect();
-    cards_to_copy_amount(cards.as_slice(), Vec::new(), 1)
+    cards_to_copy_amount(cards.as_slice(), vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 0)
 }
 
 struct Card {
@@ -49,22 +49,24 @@ impl Card {
     }
 }
 
-fn distribute_over(x: u32, copies: Vec<u32>) -> Vec<u32> {
+fn distribute_over(x: u32, copies: Vec<u32>, times: u32) -> Vec<u32> {
     let mut result = copies;
 
     for i in 0..x {
         let i = i as usize;
-        if let _ = result[i] {
-            result[i] += 1;
-        } else {
-            result.push(2);
-        }
+
+        result[i] += times;
     }
+    result.push(1);
     result
 }
 
 // [Cards] -> [u32] -> u32 -> u32
 fn cards_to_copy_amount(cards: &[Card], copies: Vec<u32>, n: u32) -> u32 {
+    // base case
+    if cards.len() == 0 {
+        return n;
+    }
     // are cards
     let (c, cs) = (&cards[0], &cards[1..]);
 
@@ -72,12 +74,7 @@ fn cards_to_copy_amount(cards: &[Card], copies: Vec<u32>, n: u32) -> u32 {
     let (x, xs) = (&copies[0], &copies[1..]);
 
     let points = c.points();
-    let copies = distribute_over(points, xs.to_vec());
+    let copies = distribute_over(points, xs.to_vec(), *x);
 
-    if copies.iter().sum::<u32>() == 0 {
-        // base case
-        return n;
-    } else {
-        cards_to_copy_amount(cs, copies, n + x)
-    }
+    cards_to_copy_amount(cs, copies, n + *x)
 }
