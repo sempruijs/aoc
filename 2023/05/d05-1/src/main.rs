@@ -81,7 +81,12 @@ impl SourceMap {
     }
 
     pub fn pipe(&self, n: u32) -> u32 {
-        0
+        for source_line in &self.0 {
+            if source_line.source_start >= n && (source_line.source_start + source_line.len) <= n {
+                return (n as i32 + source_line.div()) as u32;
+            }
+        }
+        n
     }
 }
 
@@ -96,5 +101,9 @@ impl SourceLine {
             destination_start: xs[1],
             len: xs[2],
         }
+    }
+
+    fn div(&self) -> i32 {
+        self.destination_start as i32 - self.source_start as i32
     }
 }
