@@ -1,10 +1,10 @@
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = puzzle_input_to_answer(input);
     println!("{}", answer);
 }
 
-fn puzzle_input_to_answer(s: &str) -> u32 {
+fn puzzle_input_to_answer(s: &str) -> u64 {
     let seeds = Seeds::from_input(s);
     let source_maps = SourceMaps::from_str(s);
     seeds
@@ -23,13 +23,13 @@ struct SourceMaps(Vec<SourceMap>);
 
 #[derive(Debug, Clone)]
 struct SourceLine {
-    input_start: u32,
-    output_start: u32,
-    len: u32,
+    input_start: u64,
+    output_start: u64,
+    len: u64,
 }
 
 #[derive(Debug)]
-struct Seeds(Vec<u32>);
+struct Seeds(Vec<u64>);
 
 impl Seeds {
     fn from_input(s: &str) -> Self {
@@ -41,8 +41,8 @@ impl Seeds {
                 .unwrap()
                 .1
                 .split(" ")
-                .map(|s| s.parse::<u32>().unwrap())
-                .collect::<Vec<u32>>(),
+                .map(|s| s.parse::<u64>().unwrap())
+                .collect::<Vec<u64>>(),
         )
     }
 }
@@ -59,7 +59,7 @@ impl SourceMaps {
         )
     }
 
-    fn pipe_trough(&self, n: u32) -> u32 {
+    fn pipe_trough(&self, n: u64) -> u64 {
         if self.0.is_empty() {
             return n;
         }
@@ -80,10 +80,10 @@ impl SourceMap {
         )
     }
 
-    pub fn pipe(&self, n: u32) -> u32 {
+    pub fn pipe(&self, n: u64) -> u64 {
         for source_line in &self.0 {
             if source_line.input_start <= n && (source_line.input_start + source_line.len) > n {
-                return (n as i32 + source_line.div()) as u32;
+                return (n as i64 + source_line.div()) as u64;
             }
         }
         n
@@ -92,9 +92,9 @@ impl SourceMap {
 
 impl SourceLine {
     fn from_line(s: &str) -> Self {
-        let xs: Vec<u32> = s
+        let xs: Vec<u64> = s
             .split_whitespace()
-            .map(|s| s.parse::<u32>().unwrap())
+            .map(|s| s.parse::<u64>().unwrap())
             .collect();
         Self {
             input_start: xs[1],
@@ -103,8 +103,8 @@ impl SourceLine {
         }
     }
 
-    fn div(&self) -> i32 {
-        self.output_start as i32 - self.input_start as i32
+    fn div(&self) -> i64 {
+        self.output_start as i64 - self.input_start as i64
     }
 }
 
