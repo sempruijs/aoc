@@ -23,8 +23,8 @@ struct SourceMaps(Vec<SourceMap>);
 
 #[derive(Debug, Clone)]
 struct SourceLine {
-    source_start: u32,
-    destination_start: u32,
+    input_start: u32,
+    output_start: u32,
     len: u32,
 }
 
@@ -82,7 +82,7 @@ impl SourceMap {
 
     pub fn pipe(&self, n: u32) -> u32 {
         for source_line in &self.0 {
-            if source_line.source_start >= n && (source_line.source_start + source_line.len) <= n {
+            if source_line.input_start <= n && (source_line.input_start + source_line.len) > n {
                 return (n as i32 + source_line.div()) as u32;
             }
         }
@@ -97,13 +97,41 @@ impl SourceLine {
             .map(|s| s.parse::<u32>().unwrap())
             .collect();
         Self {
-            source_start: xs[0],
-            destination_start: xs[1],
+            input_start: xs[1],
+            output_start: xs[0],
             len: xs[2],
         }
     }
 
     fn div(&self) -> i32 {
-        self.destination_start as i32 - self.source_start as i32
+        self.output_start as i32 - self.input_start as i32
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pipe() {
+        let source_line_1 = SourceLine {
+            input_start: 98,
+            output_start: 50,
+            len: 2,
+        };
+        let source_line_2 = SourceLine {
+            input_start: 50,
+            output_start: 52,
+            len: 48,
+        };
+        let source_map = SourceMap(vec![source_line_1, source_line_2]);
+
+        let result_1 = source_map.pipe(0); // should be 0
+        let result_2 = source_map.pipe(50); // should be 52
+        let result_3 = source_map.pipe(98); // should be 50
+
+        assert_eq!(result_1, 0);
+        assert_eq!(result_2, 52);
+        assert_eq!(result_3, 50);
     }
 }
