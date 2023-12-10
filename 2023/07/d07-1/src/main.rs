@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = puzzle_input_to_result(input);
     println!("{answer}");
 }
@@ -9,7 +9,6 @@ fn main() {
 fn puzzle_input_to_result(s: &str) -> u32 {
     let mut hands = Hands::from_str(s).0;
     hands.sort_by_key(|h| h.value);
-    hands.reverse();
     hands
         .iter()
         .enumerate()
@@ -27,6 +26,15 @@ struct Hands(Vec<Hand>);
 
 // this function will
 fn cards_to_value(s: &str) -> u32 {
+    let hex = cards_to_hex_value(s);
+    hex_to_value(&hex)
+}
+
+fn hex_to_value(s: &str) -> u32 {
+    u32::from_str_radix(&s, 16).unwrap()
+}
+
+fn cards_to_hex_value(s: &str) -> String {
     let type_value = cards_to_type(s);
     let mut hex = String::new();
     hex.push(type_value);
@@ -36,7 +44,7 @@ fn cards_to_value(s: &str) -> u32 {
         hex.push(c);
     }
 
-    u32::from_str_radix(&hex, 16).unwrap()
+    hex
 }
 
 impl Hand {
@@ -81,12 +89,15 @@ fn cards_to_type(s: &str) -> char {
 
     let mut frequencies: Vec<&u32> = m.values().collect();
     frequencies.sort();
+    frequencies.reverse();
 
     let first = frequencies[0];
+    if first == &5 {
+        return 'f';
+    }
     let second = frequencies[1];
 
     match first {
-        &5 => 'f',
         &4 => 'e',
         &3 => {
             if second == &2 {
@@ -103,5 +114,48 @@ fn cards_to_type(s: &str) -> char {
             }
         }
         _ => '9',
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cards_to_hex_value() {
+        let cards_1 = "32T3K";
+        let expected_1 = "a32a3d";
+        let result_1 = cards_to_hex_value(cards_1);
+
+        let cards_2 = "T55J5";
+        let expected_2 = "ca55b5";
+        let result_2 = cards_to_hex_value(cards_2);
+
+        let cards_3 = "KK677";
+        let expected_3 = "bdd677";
+        let result_3 = cards_to_hex_value(cards_3);
+
+        let cards_4 = "KTJJT";
+        let expected_4 = "bdabba";
+        let result_4 = cards_to_hex_value(cards_4);
+
+        let cards_5 = "QQQJA";
+        let expected_5 = "ccccbe";
+        let result_5 = cards_to_hex_value(cards_5);
+
+        assert_eq!(result_1, expected_1);
+        assert_eq!(result_2, expected_2);
+        assert_eq!(result_3, expected_3);
+        assert_eq!(result_4, expected_4);
+        assert_eq!(result_5, expected_5);
+    }
+
+    #[test]
+    fn test_hex_to_value() {
+        let hex_1 = "ccccbe";
+        let result_1 = hex_to_value(&hex_1);
+        let expected_1 = 13421758;
+
+        assert_eq!(result_1, expected_1);
     }
 }
