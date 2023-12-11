@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = puzzle_input_to_answer(input);
     println!("{}", answer);
 }
@@ -47,7 +47,7 @@ impl Galaxy {
         let (min_n, max_n) = (numbers.iter().min().unwrap(), numbers.iter().max().unwrap());
         let total_numbers: HashSet<i32> = HashSet::from_iter(*min_n..=*max_n);
         let mut empty_row_locations = total_numbers
-            .intersection(&numbers)
+            .difference(&numbers)
             .map(|n| *n)
             .collect::<Vec<i32>>();
         empty_row_locations.sort();
@@ -55,8 +55,17 @@ impl Galaxy {
         let mut numbers = self.0.clone();
         for n in empty_row_locations {
             for number in numbers.iter_mut() {
-                if number.y < n {
-                    number.y -= 1;
+                match transpose {
+                    true => {
+                        if number.x < n {
+                            number.x -= 1;
+                        }
+                    }
+                    false => {
+                        if number.y < n {
+                            number.y -= 1;
+                        }
+                    }
                 }
             }
         }
