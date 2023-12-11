@@ -38,17 +38,18 @@ impl Galaxy {
         Self(result)
     }
 
-
-
     fn add_lightyear_row(&self, transpose: bool) -> Self {
         let numbers: HashSet<i32> = match transpose {
             false => HashSet::from_iter(self.0.clone().iter().map(|p| p.y)),
             true => HashSet::from_iter(self.0.clone().iter().map(|p| p.x)),
         };
-        
+
         let (min_n, max_n) = (numbers.iter().min().unwrap(), numbers.iter().max().unwrap());
         let total_numbers: HashSet<i32> = HashSet::from_iter(*min_n..=*max_n);
-        let mut empty_row_locations = total_numbers.intersection(&numbers).map(|n| *n).collect::<Vec<i32>>();
+        let mut empty_row_locations = total_numbers
+            .intersection(&numbers)
+            .map(|n| *n)
+            .collect::<Vec<i32>>();
         empty_row_locations.sort();
 
         let mut numbers = self.0.clone();
@@ -57,7 +58,7 @@ impl Galaxy {
                 if number.y < n {
                     number.y -= 1;
                 }
-            }            
+            }
         }
 
         Self(numbers)
@@ -96,40 +97,4 @@ fn distance(p1: &Point, p2: &Point) -> u32 {
     };
 
     (y_div + x_div).abs() as u32
-}
-
-fn transpose_vec<T>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
-    assert!(!v.is_empty());
-    let len = v[0].len();
-    let mut iters: Vec<_> = v.into_iter().map(|n| n.into_iter()).collect();
-    (0..len)
-        .map(|_| {
-            iters
-                .iter_mut()
-                .map(|n| n.next().unwrap())
-                .collect::<Vec<T>>()
-        })
-        .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_transpose_vec() {
-        let v1 = vec![
-            vec![1,1,1],
-            vec![2,2,2],
-            vec![3,3,3],
-        ];
-
-        let expected_1 = vec![
-            vec![1,2,3],
-            vec![1,2,3],
-            vec![1,2,3],
-        ];
-        let r1 = transpose_vec(v1);
-        assert_eq!(r1, expected_1);
-    }
 }
