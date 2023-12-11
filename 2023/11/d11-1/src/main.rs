@@ -1,4 +1,4 @@
-use std::iter::Flatten;
+use std::collections::HashSet;
 
 fn main() {
     let input = include_str!("../../input.txt");
@@ -46,43 +46,38 @@ impl Galaxy {
         Self(result)
     }
 
-    fn add_lightyear_distance_row(&self, size: (u32, u32), transpose: bool) -> Self {
-        let grid = match transpose {
-            false => self.as_grid(size),
-            true => transpose_vec(self.as_grid(size)),
-        };
 
-        let mut result = grid.clone();
-        for (i, row) in grid.iter().enumerate() {
-            if row.is_empty() {
-                for (y, row) in grid.iter().enumerate() {
-                    for (x, c) in row.iter().enumerate() {
-                        result[y][x] = Point { x: c.x, y: c.y - 1 };
-                    }
+
+    fn add_lightyear_row(&self, transpose: bool) -> Self {
+        let numbers: HashSet<i32> = match transpose {
+            false => HashSet::from_iter(self.0.clone().iter().map(|p| p.y)),
+            true => HashSet::from_iter(self.0.clone().iter().map(|p| p.x)),
+        };
+        
+        let (min_n, max_n) = (numbers.iter().min().unwrap(), numbers.iter().max().unwrap());
+        let total_numbers: HashSet<i32> = HashSet::from_iter(*min_n..=*max_n);
+        let mut empty_row_locations = total_numbers.intersection(&numbers).map(|n| *n).collect::<Vec<i32>>();
+        empty_row_locations.sort();
+
+        let mut numbers = self.0.clone();
+        for n in empty_row_locations {
+            for number in numbers.iter_mut() {
+                if number.y < n {
+                    number.y -= 1;
                 }
-            }
+            }            
         }
-        Self(result.into_iter().flatten().collect::<Vec<Point>>())
+
+        Self(numbers)
     }
 
-    fn add_lightyear_distance(&self, size: (u32, u32)) -> Self {
-        let transformed_row = self.add_lightyear_distance_row(size, false);
-        transformed_row.add_lightyear_distance_row(size, true)
+    fn add_lightyear_distance(&self) -> Self {
+        self.add_lightyear_row(false).add_lightyear_row(true)
     }
 
     fn sum_distances(&self) -> u32 {
         let pairs = self.to_pairs();
         pairs.iter().map(|p| distance(&p.0, &p.1)).sum::<u32>()
-    }
-
-    fn as_grid(&self, size: (u32, u32)) -> Vec<Vec<Point>> {
-        let mut result = (0..(size.0))
-            .map(|_| Vec::new())
-            .collect::<Vec<Vec<Point>>>();
-        for p in &self.0 {
-            result[p.y as usize].push(*p);
-        }
-        result
     }
 
     fn to_pairs(&self) -> Vec<(Point, Point)> {
@@ -123,4 +118,26 @@ fn transpose_vec<T>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
                 .collect::<Vec<T>>()
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_transpose_vec() {
+        let v1 = vec![
+            vec![1,1,1],
+            vec![2,2,2],
+            vec![3,3,3],
+        ];
+
+        let expected_1 = vec![
+            vec![1,2,3],
+            vec![1,2,3],
+            vec![1,2,3],
+        ];
+        let r1 = transpose_vec(v1);
+        assert_eq!(r1, expected_1);
+    }
 }
