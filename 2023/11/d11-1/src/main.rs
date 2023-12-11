@@ -1,14 +1,13 @@
 use std::collections::HashSet;
 
 fn main() {
-    let input = include_str!("../../input.txt");
+    let input = include_str!("../../example.txt");
     let answer = puzzle_input_to_answer(input);
     println!("{}", answer);
 }
 
 fn puzzle_input_to_answer(s: &str) -> u32 {
-    let size = input_to_size(s);
-    let galaxy = Galaxy::from_str(s);
+    let galaxy = Galaxy::from_str(s).add_lightyear_distance();
     galaxy.sum_distances()
 }
 
@@ -20,13 +19,6 @@ struct Point {
 
 #[derive(Debug)]
 struct Galaxy(Vec<Point>);
-
-fn input_to_size(s: &str) -> (u32, u32) {
-    let y = s.lines().count();
-    let x = s.lines().next().unwrap().chars().count();
-
-    (x as u32, y as u32)
-}
 
 impl Galaxy {
     fn from_str(s: &str) -> Self {
