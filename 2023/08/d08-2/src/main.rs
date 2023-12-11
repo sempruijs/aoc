@@ -9,14 +9,16 @@ fn main() {
 fn puzzle_input_to_answer(s: &str) -> u32 {
     let maze = Maze::from_str(s);
     let steps = Steps::from_str(s);
-    let mut key = "AAA";
+    // println!("{}", steps.0.len());
+    let mut key = "TSA";
     let mut step_count = 0;
 
     // rust is not lazy, that is why I am lazy.
-    for i in 0..10000000 {
-        if key == "ZZZ" {
-            return step_count;
-        }
+    for i in 0..100000 {
+        // if key == "ZZZ" {
+        //     return step_count;
+        // }
+        println!("{}", key);
 
         let step = &steps.0[i % steps.0.len()];
         key = match step {
