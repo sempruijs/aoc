@@ -10,6 +10,7 @@ fn puzzle_input_to_answer(s: &str) -> u32 {
     let height: u32 = s.lines().count() as u32;
     let mut world = World::from_str(s);
     let (start_index, start, cycle_len) = world.start_and_repetition(&(height as i32));
+    world = start;
     let amount_of_cycles = (1_000_000_000 - start_index) % cycle_len;
     for _ in 0..amount_of_cycles {
         world = world.cycle(&(height as i32));
