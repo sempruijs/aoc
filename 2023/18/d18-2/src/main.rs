@@ -39,28 +39,34 @@ impl From<&str> for Points {
         let mut points: Vec<Point> = vec![Point::from((0, 0))];
 
         for line in s.lines() {
-            let words = line.split(" ").collect::<Vec<&str>>();
-            let dir = words[0];
-            let amount = words[1]
-                .parse::<i64>()
-                .expect("Could not parse &str to an i64");
+            let words = line.split_whitespace().collect::<Vec<&str>>();
+            let hex_amount = words[2]
+                .split_once("#")
+                .unwrap()
+                .1
+                .split_once(")")
+                .unwrap()
+                .0;
+            let dir = hex_amount.chars().last().unwrap();
+            let hex_distance = &hex_amount[..5];
+            let distance = i64::from_str_radix(hex_distance, 16).unwrap();
             let last_point = points.last().expect("No last point found");
 
             let p = match dir {
-                "U" => Point {
+                '3' => Point {
                     x: last_point.x,
-                    y: last_point.y + amount,
+                    y: last_point.y + distance,
                 },
-                "D" => Point {
+                '1' => Point {
                     x: last_point.x,
-                    y: last_point.y - amount,
+                    y: last_point.y - distance,
                 },
-                "L" => Point {
-                    x: last_point.x - amount,
+                '2' => Point {
+                    x: last_point.x - distance,
                     y: last_point.y,
                 },
-                "R" => Point {
-                    x: last_point.x + amount,
+                '0' => Point {
+                    x: last_point.x + distance,
                     y: last_point.y,
                 },
                 _ => panic!("Could not parse dir"),
