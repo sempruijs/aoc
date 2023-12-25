@@ -198,30 +198,7 @@ impl From<Matrix> for Shape {
     }
 }
 
-impl Matrix {
-    fn distance(&self, start_dir: &Dir) -> u32 {
-        let mut pipe_count = 1;
-        let mut next_point: Point = self.start.move_to(start_dir);
-        let mut dir = start_dir.clone();
 
-        while next_point != self.start {
-            // println!("{}", pipe_count);
-            let pipe = self.entries.get(&next_point).unwrap();
-            let out_dir = pipe.output(&dir).unwrap_or_else(|| {
-                dbg!(&pipe);
-                dbg!(&dir);
-                println!("{}", pipe_count);
-                println!("{}", pipe_count);
-                panic!("does not work");
-            });
-            dir = out_dir;
-            next_point = next_point.move_to(&dir);
-            pipe_count += 1;
-        }
-
-        pipe_count / 2
-    }
-}
 
 #[cfg(test)]
 mod tests {
