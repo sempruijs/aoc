@@ -8,20 +8,19 @@ fn main() {
     println!("{}", answer);
 }
 
-fn puzzle_input_to_answer(s: &str) -> f64 {
+fn puzzle_input_to_answer(s: &str) -> u32 {
     let matrix = Matrix::from(s);
-    Shape::from(matrix).to_area()
+    let start_dir = Dir::West;
+    matrix.distance(&start_dir)
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum Dir {
+enum Dir {
     North,
     East,
     South,
     West,
 }
-
-struct Shape(Vec<shoelace::Point>);
 
 impl Display for Dir {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -156,45 +155,6 @@ impl TryFrom<char> for Pipe {
             'S' => Err("S"),
             _ => panic!("Could not parse character to pipe."),
         }
-    }
-}
-
-impl Shape {
-    fn to_area(&self) -> f64 {
-        let surounding_area = self.0.len() / 2 - 1;
-        shoelace::Area::from(self.0.clone().into_iter().rev().collect::<Vec<shoelace::Point>>()).0 - surounding_area as f64
-    }
-}
-
-impl From<Matrix> for Shape {
-    fn from(matrix: Matrix) -> Self {
-        let start_dir = &Dir::West;
-        let mut result: Vec<Point> = vec![matrix.start.clone()];
-
-        let mut next_point: Point = matrix.start.move_to(start_dir);
-        let mut dir = start_dir.clone();
-
-        while next_point != matrix.start {
-            result.push(next_point.clone());
-            let pipe = matrix.entries.get(&next_point).unwrap();
-            let out_dir = pipe.output(&dir).unwrap_or_else(|| {
-                dbg!(&pipe);
-                dbg!(&dir);
-                panic!("does not work");
-            });
-            dir = out_dir;
-            next_point = next_point.move_to(&dir);
-        }
-
-        let result = result
-            .iter()
-            .map(|p| shoelace::Point {
-                x: p.x as i64,
-                y: p.y as i64,
-            })
-            .collect();
-
-        Self(result)
     }
 }
 

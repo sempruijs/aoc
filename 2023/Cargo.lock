@@ -133,6 +133,13 @@ name = "d10-1"
 version = "0.1.0"
 
 [[package]]
+name = "d10-2"
+version = "0.1.0"
+dependencies = [
+ "shoelace",
+]
+
+[[package]]
 name = "d11-1"
 version = "0.1.0"
 
