@@ -4,26 +4,9 @@ fn main() {
     println!("{}", answer);
 }
 
-struct Pair {
-    x: u32,
-    y: u32,
-}
-
-impl Pair {
-    fn difference(&self) -> u32 {
-        let (small, big) = match &self.x > &self.y {
-            true => (&self.y, &self.x),
-            false => (&self.x, &self.y),
-        };
-        (big - small).clone()
-    }
-}
-
 fn input_to_answer(s: &str) -> usize {
     let lists = puzzle_input_lists(s);
-    let v1 = order_list(lists.0);
-    let v2 = order_list(lists.1);
-    let answer = lists_to_answer(&v1, &v2);
+    let answer = lists_to_answer(&lists.0, &lists.1);
     answer
 }
 
@@ -47,12 +30,6 @@ fn puzzle_input_lists(s: &str) -> (Vec<u32>, Vec<u32>) {
         .collect::<Vec<u32>>();
 
     (v1, v2)
-}
-
-fn order_list(v: Vec<u32>) -> Vec<u32> {
-    let mut list = v;
-    list.sort();
-    list
 }
 
 fn amount_in_vector(v: &Vec<u32>, x: &u32) -> usize {
