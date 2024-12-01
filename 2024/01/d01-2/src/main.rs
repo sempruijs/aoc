@@ -19,12 +19,11 @@ impl Pair {
     }
 }
 
-fn input_to_answer(s: &str) -> u32 {
+fn input_to_answer(s: &str) -> usize {
     let lists = puzzle_input_lists(s);
     let v1 = order_list(lists.0);
     let v2 = order_list(lists.1);
-    let pairs = lists_to_pairs(v1, v2);
-    let answer = pairs.iter().map(|p| p.difference()).sum::<u32>();
+    let answer = lists_to_answer(&v1, &v2);
     answer
 }
 
@@ -56,13 +55,12 @@ fn order_list(v: Vec<u32>) -> Vec<u32> {
     list
 }
 
-fn lists_to_pairs(v1: Vec<u32>, v2: Vec<u32>) -> Vec<Pair> {
-    let mut pairs: Vec<Pair> = Vec::new();
-    for i in 0..(v1.len()) {
-        let x = v1[i];
-        let y = v2[i];
-        let p = Pair { x, y };
-        pairs.push(p);
-    }
-    pairs
+fn amount_in_vector(v: &Vec<u32>, x: &u32) -> usize {
+    v.iter().filter(|a| a == &x).count()
+}
+
+fn lists_to_answer(v1: &Vec<u32>, v2: &Vec<u32>) -> usize {
+    v1.iter()
+        .map(|x| amount_in_vector(v2, x) * (*x as usize))
+        .sum()
 }
