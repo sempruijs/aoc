@@ -7,6 +7,8 @@ fn main() {
 #[derive(Clone, Debug)]
 enum Instruction {
     Multiply(i32, i32),
+    Do,
+    Dont,
 }
 
 fn input_to_answer(s: &str) -> i32 {
