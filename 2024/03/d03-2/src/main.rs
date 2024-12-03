@@ -15,22 +15,28 @@ fn input_to_answer(s: &str) -> i32 {
     s.chars()
         .enumerate()
         .map(|(i, _)| try_parse_instruction(s, i))
-        .fold(0, |sum, current| match current {
-            Some(instruction) => sum + instruction.calculate(),
-            None => sum,
+        .fold((true, 0), |(active, sum), current| match current {
+            Some(instruction) => match instruction {
+                Instruction::Multiply(x, y) => match active {
+                    true => (active, (sum + (x * y))),
+                    false => (active, sum),
+                },
+                Instruction::Do => (true, sum),
+                Instruction::Dont => (false, sum),
+            },
+            None => (active, sum),
         })
-}
-
-impl Instruction {
-    fn calculate(&self) -> i32 {
-        match self {
-            Instruction::Multiply(x, y) => x * y,
-        }
-    }
+        .1
 }
 
 fn try_parse_instruction(s: &str, i: usize) -> Option<Instruction> {
     if s.len() - i > 8 {
+        if &s[i..(i + 7)] == "don't()" {
+            return Some(Instruction::Dont);
+        }
+        if &s[i..(i + 4)] == "do()" {
+            return Some(Instruction::Do);
+        }
         let mul = &s[i..(i + 4)];
         if mul == "mul(" {
             let between_brackets = match &s[(i + 4)..].split_once(")") {
