@@ -24,50 +24,18 @@ fn input_to_reports(s: &str) -> Vec<Report> {
     s.lines().map(line_to_report).collect()
 }
 
-enum Direction {
-    Decreasing,
-    Increasing,
-}
-
-impl Direction {}
-
 impl Report {
-    fn dir(&self) -> Direction {
-        let (fst, scd) = (&self.0[0], &self.0[1]);
-        match fst >= scd {
-            true => Direction::Decreasing,
-            false => Direction::Increasing,
-        }
-    }
-
     fn valid(&self) -> bool {
-        let dir = &self.dir();
-        if &self.0.len() > &1 {
-            let mut next = &0;
-            let mut current = &0;
-            for i in 0..(self.0.len() - 1) {
-                next = &self.0[i + 1];
-                current = &self.0[i];
-
-                if next == current {
-                    return false;
-                }
-                if !(correct_distance(current, next, &dir)) {
-                    return false;
-                }
-            }
-        }
-        true
+        let decrease = self.0.iter().is_sorted_by(|x, y| {
+            let diff = **x - **y;
+            diff < 4 && diff > 0
+        });
+        let increase = self.0.iter().is_sorted_by(|x, y| {
+            let diff = **y - **x;
+            diff < 4 && diff > 0
+        });
+        increase || decrease
     }
-}
-
-fn correct_distance(fst: &i32, scd: &i32, dir: &Direction) -> bool {
-    let difference = match dir {
-        Direction::Decreasing => fst - scd,
-        Direction::Increasing => scd - fst,
-    };
-
-    difference > 0 && difference < 4
 }
 
 #[cfg(test)]
@@ -179,10 +147,9 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_distance() {
-        assert!(!correct_distance(&1, &1, &Direction::Decreasing));
-        assert!(correct_distance(&1, &0, &Direction::Decreasing));
-        assert!(correct_distance(&0, &1, &Direction::Increasing));
-        assert!(!correct_distance(&0, &0, &Direction::Increasing));
+    fn test_program() {
+        let input = include_str!("../../input.txt");
+        let answer = input_to_answer(input);
+        assert_eq!(answer, 224);
     }
 }
