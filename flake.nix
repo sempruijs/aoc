@@ -26,9 +26,9 @@
       devShells = {
         default =
           pkgs.mkShell {
-            # buildInputs = with pkgs; [ nodePackages.typescript nodePackages.typescript-language-server nodePackages.ts-node nodejs bacon rnix-lsp ];
+            # buildInputs = with pkgs; [ nodePackages.typescript nodePackages.typescript-language-server nodePackages.ts-node nodejs bacon nil];
               buildInputs = [ self'.packages.rust-stable ]
-                ++ (with pkgs; [ bacon rnix-lsp hyperfine cargo-flamegraph nodePackages.typescript nodePackages.typescript-language-server nodePackages.ts-node nodejs ])
+                ++ (with pkgs; [ bacon nil hyperfine cargo-flamegraph nodePackages.typescript nodePackages.typescript-language-server nodePackages.ts-node nodejs ])
                 ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [ Security ]));
 
           };
