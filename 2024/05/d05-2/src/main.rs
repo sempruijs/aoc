@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use itertools::Itertools;
 
 fn main() {
@@ -8,46 +10,66 @@ fn main() {
 
 fn input_to_answer(s: &str) -> i32 {
     let (rules, updates) = s.split_once("\n\n").unwrap();
-    let rules = Rules::from(rules);
+    let rules = Rules::try_from(rules).unwrap();
     updates
         .lines()
-        .map(Update::from)
+        .map(|l| Update::try_from(l).unwrap())
         .filter(|u| !u.valid_with_rules(&rules))
         .map(|u| u.order(&rules).middle())
         .sum()
+}
+
+#[derive(Debug, thiserror::Error)]
+enum RuleFromStrError {
+    #[error("missing | separator in rule")]
+    MissingSeparator,
+    #[error(transparent)]
+    ParseIntError(#[from] ParseIntError),
 }
 
 struct Rule {
     left: i32,
     right: i32,
 }
+
 struct Rules(Vec<Rule>);
 
 #[derive(Debug, PartialEq, Eq)]
 struct Update(Vec<i32>);
 
-impl From<&str> for Update {
-    fn from(s: &str) -> Self {
-        Self(
-            s.split(",")
-                .map(|n| n.parse::<i32>().unwrap())
-                .collect::<Vec<i32>>(),
-        )
+impl TryFrom<&str> for Update {
+    type Error = ParseIntError;
+
+    fn try_from(s: &str) -> Result<Self, ParseIntError> {
+        s.split(",")
+            .map(|n| n.parse::<i32>())
+            .collect::<Result<Vec<i32>, _>>()
+            .map(Self)
     }
 }
 
-impl From<&str> for Rule {
-    fn from(s: &str) -> Self {
-        Self {
-            left: s.split_once("|").unwrap().0.parse::<i32>().unwrap(),
-            right: s.split_once("|").unwrap().1.parse::<i32>().unwrap(),
-        }
+impl TryFrom<&str> for Rule {
+    type Error = RuleFromStrError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let (left, right) = s
+            .split_once("|")
+            .ok_or(RuleFromStrError::MissingSeparator)?;
+        Ok(Self {
+            left: left.parse::<i32>()?,
+            right: right.parse::<i32>()?,
+        })
     }
 }
 
-impl From<&str> for Rules {
-    fn from(s: &str) -> Self {
-        Self(s.lines().map(Rule::from).collect())
+impl TryFrom<&str> for Rules {
+    type Error = RuleFromStrError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        s.lines()
+            .map(Rule::try_from)
+            .collect::<Result<Vec<Rule>, _>>()
+            .map(Self)
     }
 }
 
