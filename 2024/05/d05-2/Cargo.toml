@@ -1,7 +1,7 @@
 [package]
-name = "d05-1"
+name = "d05-2"
 version = "0.1.0"
 edition = "2021"
-resolver = "2"
 
 [dependencies]
+itertools = "0.13.0"
