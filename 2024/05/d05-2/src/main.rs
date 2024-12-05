@@ -38,10 +38,9 @@ impl From<&str> for Update {
 
 impl From<&str> for Rule {
     fn from(s: &str) -> Self {
-        let (left, right) = s.split_once("|").unwrap();
         Self {
-            left: left.parse::<i32>().unwrap(),
-            right: right.parse::<i32>().unwrap(),
+            left: s.split_once("|").unwrap().0.parse::<i32>().unwrap(),
+            right: s.split_once("|").unwrap().1.parse::<i32>().unwrap(),
         }
     }
 }
