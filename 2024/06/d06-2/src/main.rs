@@ -1,15 +1,24 @@
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 fn main() {
     let input = include_str!("../../input.txt");
     let world = World::try_from(input).unwrap();
     let player = Player::try_from(input).unwrap();
-    let mut hs = HashSet::new();
-    hs.insert(player.p.clone());
-    let answer = player.visited_points(&hs, &world).len();
-    println!("{}", answer);
+    let answer = player
+        .visited_points(&HashSet::new(), &world)
+        .into_par_iter()
+        .map(|p| world.add_wall(&p))
+        .filter(|w| {
+            let mut hs = HashSet::new();
+            hs.insert(player.clone());
+            player.loops(&mut hs, w)
+        })
+        .count();
+    println!("answer: {}", answer);
 }
-#[derive(Clone, Debug)]
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum Dir {
     North,
     East,
@@ -46,17 +55,22 @@ impl TryFrom<&str> for Player {
     }
 }
 
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
 enum Cell {
     Wall,
     Nothing,
 }
 
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
 struct Player {
     p: Point,
     dir: Dir,
 }
-#[derive(Eq, Hash, PartialEq, Clone)]
+
+#[derive(Debug, Eq, Hash, PartialEq, Clone)]
 struct Point(usize, usize);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct World(HashMap<Point, Cell>);
 
 impl TryFrom<&str> for World {
@@ -107,6 +121,19 @@ impl Dir {
 }
 
 impl Player {
+    fn loops(&self, hs: &mut HashSet<Player>, w: &World) -> bool {
+        match self.next(&w) {
+            Some(player) => {
+                if hs.get(&player) != None {
+                    return true;
+                }
+                hs.insert(player.clone());
+                return player.loops(hs, w);
+            }
+            None => false,
+        }
+    }
+
     fn next(&self, w: &World) -> Option<Player> {
         let current = &self.p;
         let next = current.apply(&self.dir)?;
@@ -133,5 +160,14 @@ impl Player {
             }
             None => hs,
         }
+    }
+}
+
+impl World {
+    fn add_wall(&self, p: &Point) -> Self {
+        let mut hs = self.0.clone();
+        hs.remove(p);
+        hs.insert(p.clone(), Cell::Wall);
+        Self(hs)
     }
 }
