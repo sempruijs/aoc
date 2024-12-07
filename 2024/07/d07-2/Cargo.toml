@@ -1,0 +1,8 @@
+[package]
+name = "d07-2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+radix_fmt = "1.0.0"
+rayon = "1.10.0"
