@@ -10,18 +10,11 @@ fn input_to_answer(s: &str) -> usize {
     let w = World::from(s);
     let dimentions = dimentions(s);
     let freaquencies = frequencies(s);
-    let mut points: HashSet<Point> = freaquencies
+    let points: HashSet<Point> = freaquencies
         .iter()
-        .flat_map(|c| w.lines(c).block_points(&dimentions))
+        .flat_map(|c| w.lines(c).block_points())
         .filter(|p| p.within(&dimentions))
         .collect();
-    freaquencies.iter().for_each(|c| {
-        if w.lines(c).0.len() > 0 {
-            w.0.iter().filter(|a| a.c == *c).for_each(|a| {
-                points.insert(a.p.clone());
-            })
-        }
-    });
     points.len()
 }
 
@@ -117,38 +110,24 @@ impl World {
 }
 
 impl Line {
-    fn block_points(&self, dimentions: &(i32, i32)) -> Vec<Point> {
+    fn block_points(&self) -> Vec<Point> {
         let diff_x = self.1.x - self.0.x;
         let diff_y = self.1.y - self.0.y;
-        let mut v = Vec::new();
-        (1..10000)
-            .map(|i| {
-                let p1 = Point {
-                    x: self.0.x - (diff_x * i),
-                    y: self.0.y - (diff_y * i),
-                };
-                let p2 = Point {
-                    x: self.1.x + (diff_x * i),
-                    y: self.1.y + (diff_y * i),
-                };
-                (p1, p2)
-            })
-            .filter(|(p1, p2)| p1.within(dimentions) || p2.within(dimentions))
-            .for_each(|(p1, p2)| {
-                v.push(p1);
-                v.push(p2);
-            });
-        v
+        let p1 = Point {
+            x: self.0.x - diff_x,
+            y: self.0.y - diff_y,
+        };
+        let p2 = Point {
+            x: self.1.x + diff_x,
+            y: self.1.y + diff_y,
+        };
+        vec![p1, p2]
     }
 }
 
 impl Lines {
-    fn block_points(&self, dimentions: &(i32, i32)) -> HashSet<Point> {
-        let mut hs: HashSet<Point> = self
-            .0
-            .iter()
-            .flat_map(|l| l.block_points(dimentions))
-            .collect();
+    fn block_points(&self) -> HashSet<Point> {
+        let mut hs: HashSet<Point> = self.0.iter().flat_map(|l| l.block_points()).collect();
         let wrong_points: HashSet<Point> =
             self.0.clone().into_iter().fold(HashSet::new(), |mut v, l| {
                 v.insert(l.0);
