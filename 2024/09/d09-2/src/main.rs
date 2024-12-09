@@ -1,5 +1,7 @@
+use std::fmt::Display;
+
 fn main() {
-    let input = include_str!("../../input.txt");
+    let input = include_str!("../../example.txt");
     let answer = input_to_answer(input);
     println!("answer is: {}", answer);
 }
@@ -11,7 +13,13 @@ fn input_to_answer(s: &str) -> usize {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-struct Disk(Vec<Option<u128>>);
+struct Disk(Vec<Space>);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Space {
+    x: Option<u128>,
+    len: usize,
+}
 
 impl TryFrom<&str> for Disk {
     type Error = ();
@@ -25,61 +33,95 @@ impl TryFrom<&str> for Disk {
                 .map(|c| c.to_digit(10).unwrap())
                 .enumerate()
                 .fold(Vec::new(), |mut v, (i, x)| {
-                    for _ in 0..x {
-                        match i % 2 == 0 {
-                            true => v.push(Some((i / 2).try_into().unwrap())),
-                            false => v.push(None),
-                        }
-                    }
+                    let space = Space {
+                        x: match i % 2 == 0 {
+                            true => Some((i / 2).try_into().unwrap()),
+                            false => None,
+                        },
+                        len: x as usize,
+                    };
+                    v.push(space);
                     v
                 }),
         ))
     }
 }
 
-impl Disk {
-    fn cleanup(&mut self) {
-        if !self.is_clean() {
-            let (i, last) = self.last();
-            let first_none = self
-                .0
-                .iter()
-                .enumerate()
-                .filter(|(_, x)| x.is_none())
-                .next()
-                .unwrap()
-                .0;
-            self.0[first_none] = Some(last);
-            self.0[i] = None;
-            self.cleanup()
+impl Display for Disk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = String::new();
+        self.0
+            .iter()
+            .for_each(|space| s.push_str(&format!("{}", space)));
+        write!(f, "{}", s)
+    }
+}
+
+impl Display for Space {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = String::new();
+        (0..self.len).for_each(|_| match self.x {
+            Some(x) => s.push_str(&format!("{}", x)),
+            None => s.push('.'),
+        });
+        write!(f, "{}", s)
+    }
+}
+
+impl Space {
+    fn insert(&self, space: &Space) -> Option<(Self, Self)> {
+        match self.x.is_none() && self.len >= space.len && space.x.is_some() {
+            true => {
+                let s2 = Self {
+                    x: None,
+                    len: self.len - space.len,
+                };
+                Some((space.clone(), s2))
+            }
+            false => None,
         }
     }
 
-    fn last(&self) -> (usize, u128) {
-        let (i, x) = self
-            .0
-            .iter()
-            .enumerate()
-            .filter(|(_, x)| x.is_some())
-            .last()
-            .unwrap();
-        (i, x.unwrap().clone())
+    fn make_empty(&self) -> Self {
+        Self {
+            x: None,
+            len: self.len,
+        }
     }
+}
 
-    fn is_clean(&self) -> bool {
-        self.0.iter().is_sorted_by(|a, b| {
-            (a.is_some() && b.is_some())
-                || (a.is_some() && b.is_none())
-                || (a.is_none() && b.is_none())
+impl Disk {
+    fn flatten(&self) -> Vec<Option<u128>> {
+        self.0.iter().fold(Vec::new(), |mut v, space| {
+            (0..space.len).for_each(|_| v.push(space.x));
+            v
         })
+    }
+    fn cleanup(&mut self) -> Self {
+        for (i, space) in self.0.iter().enumerate().rev() {
+            for (j, space2) in self.0.iter().enumerate() {
+                if let Some((s1, s2)) = space2.insert(space) {
+                    if j < i {
+                        // let mut v = self.0.clone();
+                        self.0[i] = space.make_empty();
+                        self.0[j] = s1;
+                        self.0.insert(j + 1, s2);
+                        return self.cleanup();
+                    }
+                }
+            }
+        }
+        self.clone()
     }
 
     fn checksum(&self) -> usize {
-        self.0
+        self.flatten()
             .iter()
-            .filter(|x| x.is_some())
             .enumerate()
-            .fold(0, |sum, (i, x)| sum + ((x.unwrap()) as usize * i))
+            .fold(0, |sum, (i, x)| match x {
+                Some(y) => sum + (*y as usize * i),
+                None => sum,
+            })
     }
 }
 
@@ -88,82 +130,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parser() {
-        let input = "2333133121414131402";
-        let expected = Disk(vec![
-            Some(0),
-            Some(0),
-            None,
-            None,
-            None,
-            Some(1),
-            Some(1),
-            Some(1),
-            None,
-            None,
-            None,
-            Some(2),
-            None,
-            None,
-            None,
-            Some(3),
-            Some(3),
-            Some(3),
-            None,
-            Some(4),
-            Some(4),
-            None,
-            Some(5),
-            Some(5),
-            Some(5),
-            Some(5),
-            None,
-            Some(6),
-            Some(6),
-            Some(6),
-            Some(6),
-            None,
-            Some(7),
-            Some(7),
-            Some(7),
-            None,
-            Some(8),
-            Some(8),
-            Some(8),
-            Some(8),
-            Some(9),
-            Some(9),
-        ]);
-        let result = Disk::try_from(input).unwrap();
-        assert_eq!(result, expected);
-
-        let input = "33";
-        let expected = Disk(vec![Some(0), Some(0), Some(0), None, None, None]);
-        let result = Disk::try_from(input).unwrap();
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_checksum() {
-        let input = Disk(vec![Some(0), Some(0), Some(0), None, None, None]);
-        let result = input.checksum();
-        let expected = 0;
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_cleanup() {
-        let mut result = Disk(vec![Some(0), Some(0), Some(0), None, None, None]);
-        result.cleanup();
-        let expected = Disk(vec![Some(0), Some(0), Some(0), None, None, None]);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_is_clean() {
-        let input = Disk(vec![Some(0), Some(0), Some(0), None, None, None]);
-        let result = input.is_clean();
-        assert!(result);
+    fn test_insert() {
+        let s1 = Space { x: None, len: 4 };
+        let s2 = Space { x: Some(4), len: 2 };
+        let expected_s1 = Space { x: Some(4), len: 2 };
+        let expected_s2 = Space { x: None, len: 2 };
+        let (result_s1, result_s2) = s1.insert(&s2).unwrap();
+        assert_eq!(result_s1, expected_s1);
+        assert_eq!(result_s2, expected_s2);
     }
 }
