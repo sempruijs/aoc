@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::collections::HashSet;
 
 fn main() {
     let input = include_str!("../../input.txt");
@@ -7,7 +6,7 @@ fn main() {
     println!("answer is: {}", answer);
 }
 
-fn input_to_answer(s: &str) -> usize {
+fn input_to_answer(s: &str) -> u32 {
     let w = World::try_from(s).unwrap();
     w.routes_count()
 }
@@ -65,35 +64,32 @@ impl TryFrom<&str> for World {
 }
 
 impl World {
-    fn routes_count(&self) -> usize {
-        self.zeros()
-            .iter()
-            .map(|p| {
-                let mut hs = HashSet::new();
-                self.route_count(&mut hs, p);
-                hs.len()
-            })
-            .sum()
+    fn routes_count(&self) -> u32 {
+        self.zeros().iter().map(|p| self.route_count(p)).sum()
     }
 
-    fn route_count(&self, hs: &mut HashSet<Point>, p: &Point) {
+    fn route_count(&self, p: &Point) -> u32 {
         if let Some(x) = self.0.get(p) {
             let p_north = p.apply(&Dir::North);
             let p_east = p.apply(&Dir::East);
             let p_south = p.apply(&Dir::South);
             let p_west = p.apply(&Dir::West);
             let points = vec![p_north, p_east, p_south, p_west];
-            points.iter().for_each(|p| {
-                if let Some(y) = self.0.get(p) {
-                    if *y == x + 1 {
-                        if *y == 9 {
-                            hs.insert(p.clone());
-                        } else {
-                            self.route_count(hs, p);
-                        }
-                    };
-                }
-            });
+            return points
+                .iter()
+                .map(|p| match self.0.get(p) {
+                    Some(y) => match *y == x + 1 {
+                        true => match *y == 9 {
+                            true => 1,
+                            false => self.route_count(p),
+                        },
+                        false => 0,
+                    },
+                    None => 0,
+                })
+                .sum::<u32>();
+        } else {
+            0
         }
     }
 
