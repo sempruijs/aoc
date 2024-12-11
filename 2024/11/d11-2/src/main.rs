@@ -1,18 +1,36 @@
+use memoize::memoize;
+use rayon::prelude::*;
 use std::num::ParseIntError;
 
 fn main() {
     let input = include_str!("../../input.txt");
-    let answer = input_to_answer(input);
-    println!("answer is: {}", answer);
+    let worlds: Vec<World> = input
+        .split_whitespace()
+        .map(|w| World::try_from(w).unwrap())
+        .collect();
+    let answer: Vec<usize> = worlds
+        .into_par_iter()
+        .map(|w| input_to_answer(w, 75))
+        .collect();
+    let bla: usize = answer.iter().sum();
+    println!("answer is: {}", bla);
 }
 
-#[derive(Debug)]
+#[derive(Eq, Hash, PartialEq, Debug, Clone)]
 struct World(Vec<u128>);
 
-fn input_to_answer(s: &str) -> usize {
-    let mut w = World::try_from(s).unwrap();
-    (0..25).for_each(|_| w.blink());
-    w.0.len()
+#[memoize]
+fn input_to_answer(w: World, repeat: u8) -> usize {
+    match repeat == 0 {
+        true => w.0.len(),
+        false => {
+            let mut w = w.clone();
+            w.blink();
+            w.0.iter()
+                .map(|n| input_to_answer(World(vec![*n]), repeat - 1))
+                .sum()
+        }
+    }
 }
 
 impl TryFrom<&str> for World {
@@ -38,7 +56,7 @@ impl World {
             if n == &0 {
                 self.0[i + shifted] = 1;
             } else {
-                if let Some((x, y)) = split(n) {
+                if let Some((x, y)) = split(*n) {
                     self.0[i + shifted] = x;
                     shifted += 1;
                     self.0.insert(i + shifted, y);
@@ -49,8 +67,8 @@ impl World {
         }
     }
 }
-
-fn split(n: &u128) -> Option<(u128, u128)> {
+#[memoize]
+fn split(n: u128) -> Option<(u128, u128)> {
     let s = n.to_string();
     match s.len() % 2 == 0 && s.len() >= 2 {
         true => {

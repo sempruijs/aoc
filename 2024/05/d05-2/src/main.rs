@@ -75,11 +75,7 @@ impl TryFrom<&str> for Rules {
 
 impl Update {
     fn valid_with_rules(&self, rs: &Rules) -> bool {
-        rs.0.iter()
-            .map(|r| self.valid_with_rule(r))
-            .filter(|b| !b)
-            .count()
-            == 0
+        rs.0.iter().filter(|r| !self.valid_with_rule(r)).count() == 0
     }
 
     fn valid_with_rule(&self, r: &Rule) -> bool {
