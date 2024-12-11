@@ -8,9 +8,9 @@ fn main() {
         .split_whitespace()
         .map(|w| World::try_from(w).unwrap())
         .collect();
-    let answer: Vec<usize> = worlds
+    let stones_amounts = answer: Vec<usize> = worlds
         .into_par_iter()
-        .map(|w| input_to_answer(w, 75))
+        .map(|w| world_to_answer(w, 75))
         .collect();
     let bla: usize = answer.iter().sum();
     println!("answer is: {}", bla);
@@ -20,14 +20,14 @@ fn main() {
 struct World(Vec<u128>);
 
 #[memoize]
-fn input_to_answer(w: World, repeat: u8) -> usize {
+fn world_to_answer(w: World, repeat: u8) -> usize {
     match repeat == 0 {
         true => w.0.len(),
         false => {
             let mut w = w.clone();
             w.blink();
             w.0.iter()
-                .map(|n| input_to_answer(World(vec![*n]), repeat - 1))
+                .map(|n| world_to_answer(World(vec![*n]), repeat - 1))
                 .sum()
         }
     }
