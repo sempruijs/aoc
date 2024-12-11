@@ -8,12 +8,12 @@ fn main() {
         .split_whitespace()
         .map(|w| World::try_from(w).unwrap())
         .collect();
-    let stones_amounts = answer: Vec<usize> = worlds
+    let stones_amounts: Vec<usize> = worlds
         .into_par_iter()
         .map(|w| world_to_answer(w, 75))
         .collect();
-    let bla: usize = answer.iter().sum();
-    println!("answer is: {}", bla);
+    let answer: usize = stones_amounts.iter().sum();
+    println!("answer is: {}", answer);
 }
 
 #[derive(Eq, Hash, PartialEq, Debug, Clone)]
