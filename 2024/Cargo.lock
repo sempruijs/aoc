@@ -173,6 +173,9 @@ dependencies = [
 [[package]]
 name = "d13-1"
 version = "0.1.0"
+dependencies = [
+ "memoize",
+]
 
 [[package]]
 name = "either"
