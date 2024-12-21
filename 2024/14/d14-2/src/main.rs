@@ -1,10 +1,15 @@
+use rayon::prelude::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fmt::Display;
+use std::io::{stdin, stdout, Write};
+use termion::event::Key;
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
 
 fn main() {
     let input = include_str!("../../input.txt");
-    let answer = input_to_answer(input);
-    println!("The answer is: {}", answer);
+    input_to_view(input);
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -65,11 +70,12 @@ struct Robot {
     v: Point,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct World {
     robots: Vec<Robot>,
     width: usize,
     height: usize,
+    time: usize,
 }
 
 impl Display for World {
@@ -79,7 +85,7 @@ impl Display for World {
             let p = r.p.as_world_point(self.width, self.height);
             hm.entry(p).and_modify(|x| *x += 1).or_insert(1);
         });
-        let mut result = String::new();
+        let mut result = String::from("----------------------------\n\r");
         for y in 0..self.height {
             for x in 0..self.width {
                 let p = Point {
@@ -88,14 +94,15 @@ impl Display for World {
                 }
                 .as_world_point(self.width, self.height);
                 if let Some(n) = hm.get(&p) {
-                    result.push_str(&format!("{}", n));
+                    // result.push_str(&format!("{}", n));
+                    result.push_str(&format!("#"));
                 } else {
-                    result.push('.');
+                    result.push(' ');
                 }
             }
-            result.push('\n');
+            result.push_str("\n\r")
         }
-        write!(f, "{}", result)
+        write!(f, "{}\n\n time: {}", result, self.time)
     }
 }
 
@@ -110,6 +117,7 @@ impl TryFrom<&str> for World {
             height,
             width,
             robots,
+            time: 0,
         })
     }
 }
@@ -147,7 +155,86 @@ impl Robot {
     }
 }
 
+struct Worlds(Vec<World>);
+
+impl Worlds {
+    fn potential_trees(self) -> Self {
+        Self(
+            self.0
+                .into_par_iter()
+                .filter(|w| w.possible_tree())
+                .collect(),
+        )
+    }
+
+    fn view(&self) {
+        let mut i = 0;
+        let stdin = stdin();
+        //setting up stdout and going into raw mode
+        let mut stdout = stdout().into_raw_mode().unwrap();
+        stdout.flush().unwrap();
+
+        //detecting keydown events
+        for c in stdin.keys() {
+            //clearing the screen and going to top left corner
+            write!(
+                stdout,
+                "{}{}",
+                termion::cursor::Goto(1, 1),
+                termion::clear::All
+            )
+            .unwrap();
+
+            //i reckon this speaks for itself
+            match c.unwrap() {
+                Key::Right => {
+                    i += 1;
+                    println!("{}", self.0[i])
+                }
+                Key::Left => {
+                    i -= 1;
+                    println!("{}", self.0[i])
+                }
+                Key::Ctrl('q') => break,
+                _ => (),
+            }
+
+            stdout.flush().unwrap();
+        }
+    }
+
+    fn generate(w: &World, amount: usize) -> Self {
+        let mut result = vec![w.clone()];
+        for _ in 0..amount {
+            let w = result.last().unwrap().clone().next();
+            result.push(w.clone());
+        }
+        Self(result)
+    }
+}
+
+fn has_line(hs: &HashSet<Point>, y: usize) -> bool {
+    let mut ns: Vec<i32> = hs
+        .into_iter()
+        .filter(|p| p.y == y.try_into().unwrap())
+        .map(|p| p.x)
+        .collect();
+    ns.sort();
+    ns.into_iter().is_sorted_by(|a, b| a + 1 == *b)
+}
+
+impl From<&World> for HashSet<Point> {
+    fn from(w: &World) -> Self {
+        w.clone().robots.into_iter().map(|r| r.p).collect()
+    }
+}
+
 impl World {
+    fn possible_tree(&self) -> bool {
+        let hs = HashSet::from(self);
+        (0..self.height).filter(|y| has_line(&hs, *y)).count() > 30
+    }
+
     fn next(self) -> Self {
         let robots = self
             .robots
@@ -158,6 +245,7 @@ impl World {
             robots,
             width: self.width,
             height: self.height,
+            time: self.time + 1,
         }
     }
 
@@ -175,25 +263,8 @@ impl World {
     }
 }
 
-fn input_to_answer(s: &str) -> usize {
-    let mut w = World::try_from(s).unwrap();
-    for _ in 0..100 {
-        w = w.next();
-    }
-    w.answer()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_map_as_world() {
-        let height = 103;
-        let width = 101;
-        let input = Point { x: 4, y: 3 };
-        let result = input.as_world_point(width, height);
-        let expected = Point { x: 1, y: 3 };
-        assert_eq!(result, expected);
-    }
+fn input_to_view(s: &str) {
+    let w = World::try_from(s).unwrap();
+    let worlds = Worlds::generate(&w, 100000).potential_trees();
+    worlds.view()
 }
