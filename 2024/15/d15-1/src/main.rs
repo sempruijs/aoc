@@ -11,7 +11,6 @@ fn input_to_answer(s: &str) -> usize {
     let (left, right) = s.split_once("\n\n").unwrap();
     let instructions = Instructions::try_from(right).unwrap();
     let world = World::try_from(left).unwrap();
-    // println!("{world}");
     world.apply_instructions(&instructions).answer()
 }
 
@@ -210,12 +209,10 @@ impl World {
     }
 
     fn apply_instruction(self, instruction: &Instruction) -> Self {
-        let result = match instruction.to_transactions(&self) {
+        match instruction.to_transactions(&self) {
             Some(transactions) => self.apply_transactions(&transactions),
             None => self,
-        };
-        // println!("{result}");
-        result
+        }
     }
 
     fn apply_transactions(&self, transactions: &Transactions) -> Self {
