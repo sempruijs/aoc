@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = input_to_answer(input);
     println!("The answer is: {answer}");
 }
@@ -9,10 +10,32 @@ fn main() {
 fn input_to_answer(s: &str) -> usize {
     let (left, right) = s.split_once("\n\n").unwrap();
     let instructions = Instructions::try_from(right).unwrap();
-    World::try_from(left)
-        .unwrap()
-        .apply_instructions(&instructions)
-        .answer()
+    let world = World::try_from(left).unwrap();
+    // println!("{world}");
+    world.apply_instructions(&instructions).answer()
+}
+
+impl Display for World {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut result = String::new();
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let p = Point {
+                    x: x as i32,
+                    y: y as i32,
+                };
+                let c = match self.tiles.get(&p) {
+                    None => '.',
+                    Some(Tile::Box) => 'O',
+                    Some(Tile::Wall) => '#',
+                    Some(Tile::Player) => '@',
+                };
+                result.push(c);
+            }
+            result.push_str("\n\r");
+        }
+        write!(f, "{result}")
+    }
 }
 
 impl Point {
@@ -71,7 +94,32 @@ impl TryFrom<&str> for World {
     type Error = ();
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        todo!()
+        let mut hm: HashMap<Point, Tile> = HashMap::new();
+        let height = s.lines().count();
+        let width = s.lines().next().unwrap().chars().count();
+        for (y, l) in s.lines().enumerate() {
+            for (x, c) in l.chars().enumerate() {
+                let p = Point {
+                    y: y.try_into().unwrap(),
+                    x: x.try_into().unwrap(),
+                };
+                let tile = match c {
+                    '.' => None,
+                    '#' => Some(Tile::Wall),
+                    'O' => Some(Tile::Box),
+                    '@' => Some(Tile::Player),
+                    c => panic!("Unknown char: {}", c),
+                };
+                if let Some(tile) = tile {
+                    hm.insert(p, tile);
+                }
+            }
+        }
+        Ok(Self {
+            tiles: hm.clone(),
+            width,
+            height,
+        })
     }
 }
 
@@ -105,16 +153,24 @@ struct Transaction {
 #[derive(Debug, Clone)]
 struct World {
     tiles: HashMap<Point, Tile>,
+    width: usize,
+    height: usize,
 }
 
 struct Transactions(Vec<Transaction>);
 
 impl Instruction {
     fn to_transactions(&self, w: &World) -> Option<Transactions> {
-        let mut transactions = vec![Transaction {
-            p: w.player(),
-            tile: None,
-        }];
+        let mut transactions = vec![
+            Transaction {
+                p: w.player().transform(self),
+                tile: Some(Tile::Player),
+            },
+            Transaction {
+                p: w.player(),
+                tile: None,
+            },
+        ];
         let mut current_tile = Tile::Player;
         let mut next_point = w.player().transform(self);
         loop {
@@ -128,17 +184,16 @@ impl Instruction {
                     return Some(Transactions(transactions));
                 }
                 Some(Tile::Wall) => return None,
-                Some(Tile::Box) => {
+                Some(tile) => {
                     let t = Transaction {
                         p: next_point.clone(),
                         tile: Some(current_tile),
                     };
                     transactions.push(t);
                     next_point = next_point.transform(self);
-                    current_tile = Tile::Box;
+                    current_tile = tile.clone();
                 }
-                Some(Tile::Player) => panic!("Found a duplicate player"),
-            }
+            };
         }
     }
 }
@@ -155,11 +210,12 @@ impl World {
     }
 
     fn apply_instruction(self, instruction: &Instruction) -> Self {
-        if let Some(transactions) = instruction.to_transactions(&self) {
-            self.apply_transactions(&transactions)
-        } else {
-            self
-        }
+        let result = match instruction.to_transactions(&self) {
+            Some(transactions) => self.apply_transactions(&transactions),
+            None => self,
+        };
+        // println!("{result}");
+        result
     }
 
     fn apply_transactions(&self, transactions: &Transactions) -> Self {
@@ -173,8 +229,14 @@ impl World {
         let mut tiles = self.tiles.clone();
         if let Some(tile) = t.tile.clone() {
             tiles.insert(t.p.clone(), tile);
+        } else {
+            tiles.remove(&t.p);
         }
-        Self { tiles: tiles }
+        Self {
+            tiles: tiles,
+            width: self.width,
+            height: self.height,
+        }
     }
 
     fn answer(self) -> usize {
@@ -186,12 +248,13 @@ impl World {
     }
 
     fn apply_instructions(self, instructions: &Instructions) -> Self {
-        instructions
+        let result = instructions
             .0
             .iter()
             .fold(self.clone(), |result, instruction| {
                 result.apply_instruction(instruction)
-            })
+            });
+        result
     }
 }
 #[cfg(test)]
