@@ -6,7 +6,7 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = input_to_answer(input);
     println!("The answer is: {answer}");
 }
@@ -254,6 +254,11 @@ impl Instruction {
                                 transactions.push(t2);
                                 next_points.remove(&next_point);
                             } else {
+                                let current_tile = if current_tile == Some(Tile::Wall) {
+                                    None
+                                } else {
+                                    current_tile
+                                };
                                 let t = Transaction {
                                     p: next_point.clone(),
                                     tile: current_tile,
