@@ -15,7 +15,7 @@ fn input_to_answer(s: &str) -> usize {
     let (left, right) = s.split_once("\n\n").unwrap();
     let instructions = Instructions::try_from(right).unwrap();
     let world = World::try_from(left).unwrap();
-    world.interactive();
+    // world.interactive();
     let end_world = world.apply_instructions(&instructions);
     println!("{end_world}");
     end_world.answer()
@@ -213,30 +213,27 @@ impl Instruction {
                             {
                                 let behind_box_point =
                                     &next_point.clone().transform(self).transform(self);
-                                let behind_box_tile = w.tiles.get(&behind_box_point);
-                                match behind_box_tile {
-                                    Some(&Tile::Wall) => return None,
-                                    Some(&Tile::Box) => todo!(),
-                                    None => {
-                                        let t1 = Transaction {
-                                            p: behind_box_point.clone(),
-                                            tile: Some(Tile::Box),
-                                        };
-                                        let t2 = Transaction {
-                                            p: next_point.transform(self).clone(),
-                                            tile: None,
-                                        };
-                                        transactions.push(t1);
-                                        transactions.push(t2);
-                                        next_points.remove(&next_point);
-                                    }
-                                    Some(&Tile::Player) => panic!("duplicate player found"),
-                                }
+                                let t1 = Transaction {
+                                    p: behind_box_point.clone(),
+                                    tile: Some(Tile::Box),
+                                };
+                                let t2 = Transaction {
+                                    p: next_point.transform(self).clone(),
+                                    tile: None,
+                                };
+                                transactions.push(t1);
+                                transactions.push(t2);
+                                next_points.insert(next_point.transform(self).transform(self));
+                                next_points.remove(&next_point);
                             }
                             let t = Transaction {
                                 p: next_point.clone(),
                                 tile: current_tile.clone(),
                             };
+                            let left_point = next_point.transform(&Instruction::West);
+                            if vertical && w.tiles.get(&left_point) == Some(&Tile::Box) {
+                                next_points.insert(left_point);
+                            }
                             transactions.push(t);
                             next_points.remove(&next_point);
                         }
@@ -244,26 +241,18 @@ impl Instruction {
                         Some(Tile::Player) => panic!("Found duplicate player"),
                         Some(Tile::Box) => {
                             if !vertical {
-                                if self == &Instruction::East {
-                                    if w.tiles
-                                        .get(&next_point.transform(self).transform(self))
-                                        .cloned()
-                                        == Some(Tile::Wall)
-                                    {
-                                        return None;
-                                    }
-                                    let t1 = Transaction {
-                                        p: next_point.clone(),
-                                        tile: current_tile.clone(),
-                                    };
-                                    let t2 = Transaction {
-                                        p: next_point.transform(self),
-                                        tile: w.tiles.get(&next_point).cloned(),
-                                    };
-                                    transactions.push(t1);
-                                    transactions.push(t2);
-                                    next_points.remove(&next_point);
-                                }
+                                next_points.insert(next_point.transform(self).transform(self));
+                                let t1 = Transaction {
+                                    p: next_point.clone(),
+                                    tile: current_tile.clone(),
+                                };
+                                let t2 = Transaction {
+                                    p: next_point.transform(self),
+                                    tile: w.tiles.get(&next_point).cloned(),
+                                };
+                                transactions.push(t1);
+                                transactions.push(t2);
+                                next_points.remove(&next_point);
                             } else {
                                 let t = Transaction {
                                     p: next_point.clone(),
@@ -346,23 +335,24 @@ impl World {
             Some(transactions) => self.apply_transactions(&transactions),
             None => self.clone(),
         };
-        match result.has_the_terrible_wall_bug() {
-            true => self,
-            false => result,
-        }
+        result
+        // match result.has_the_terrible_wall_bug() {
+        //     true => self,
+        //     false => result,
+        // }
     }
 
-    fn has_the_terrible_wall_bug(&self) -> bool {
-        self.tiles
-            .clone()
-            .into_iter()
-            .filter(|(p, t)| {
-                t == &Tile::Box
-                    && self.tiles.get(&p.transform(&Instruction::West)) == Some(&Tile::Box)
-            })
-            .count()
-            > 0
-    }
+    // fn has_the_terrible_wall_bug(&self) -> bool {
+    //     self.tiles
+    //         .clone()
+    //         .into_iter()
+    //         .filter(|(p, t)| {
+    //             t == &Tile::Box
+    //                 && self.tiles.get(&p.transform(&Instruction::West)) == Some(&Tile::Box)
+    //         })
+    //         .count()
+    //         > 0
+    // }
 
     fn apply_transactions(&self, transactions: &Transactions) -> Self {
         transactions
