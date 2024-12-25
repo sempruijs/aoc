@@ -1,0 +1,8 @@
+[package]
+name = "d16-1"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+petgraph = "0.6.5"
+radsort = "0.1.1"
