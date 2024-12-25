@@ -4,11 +4,51 @@ use petgraph::data::FromElements;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::{NodeIndex, UnGraph};
 use std::collections::HashSet;
+use std::fmt::Display;
 
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = input_to_answer(input);
     println!("The answer is: {answer}");
+}
+
+impl Display for Line {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} <-> {}", self.p1, self.p2)
+    }
+}
+
+impl Display for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl Display for Corner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let directions = self
+            .out
+            .clone()
+            .into_iter()
+            .fold(String::new(), |mut result, dir| {
+                let s = format!("{}", dir);
+                result.push_str(&s);
+                result
+            });
+        write!(f, "p: {}\n out: {}", self.p, directions)
+    }
+}
+
+impl Display for Dir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let c = match self {
+            Dir::Up => "^",
+            Dir::Right => ">",
+            Dir::Down => "v",
+            Dir::Left => "<",
+        };
+        write!(f, "{c}")
+    }
 }
 
 struct World {
@@ -28,11 +68,11 @@ impl Point {
         match dir {
             Dir::Up => Self {
                 x: self.x,
-                y: self.x - 1,
+                y: self.y - 1,
             },
             Dir::Left => Self {
                 x: self.x - 1,
-                y: self.x,
+                y: self.y,
             },
             Dir::Down => Self {
                 x: self.x,
@@ -46,7 +86,7 @@ impl Point {
     }
 
     fn index(&self) -> u32 {
-        self.x * 10000 + self.y
+        self.x * 100 + self.y
     }
 }
 
@@ -58,7 +98,7 @@ struct Line {
 
 impl Line {
     fn cost(&self) -> u32 {
-        self.p1.x.abs_diff(self.p2.x) + self.p1.y.abs_diff(self.p2.y)
+        self.p1.x.abs_diff(self.p2.x) + self.p1.y.abs_diff(self.p2.y) + 1000
     }
 
     fn edge(&self) -> (u32, u32, u32) {
@@ -111,7 +151,7 @@ impl TryFrom<&str> for Corners {
                 && right_point.is_some()
                 && up_point.is_none()
                 && down_point.is_none())
-                || (left_point.is_none()
+                && !(left_point.is_none()
                     && right_point.is_none()
                     && up_point.is_some()
                     && down_point.is_some())
@@ -145,6 +185,7 @@ impl From<Corners> for Lines {
                 .into_iter()
                 .collect();
             radsort::sort_by_key(&mut corners, |c: &Corner| c.p.y);
+            let corners: Vec<Corner> = corners.into_iter().filter(|c| c.p.y > corner.p.y).collect();
             'inner: for corner2 in corners {
                 if corner2.out.contains(&Dir::Up) {
                     let line = Line {
@@ -165,6 +206,7 @@ impl From<Corners> for Lines {
                 .into_iter()
                 .collect();
             radsort::sort_by_key(&mut corners, |c: &Corner| c.p.x);
+            let corners: Vec<Corner> = corners.into_iter().filter(|c| c.p.x > corner.p.x).collect();
             'inner: for corner2 in corners {
                 if corner2.out.contains(&Dir::Left) {
                     let line = Line {
@@ -232,7 +274,6 @@ impl TryFrom<&str> for World {
 
 impl World {
     fn answer(&self) -> u32 {
-        println!("{:?}", Dot::with_config(&self.g, &[Config::EdgeNoLabel]));
         let node_map = dijkstra(&self.g, self.start.index().into(), None, |e| *e.weight());
         *node_map
             .get(&NodeIndex::new(self.end.index().try_into().unwrap()))
