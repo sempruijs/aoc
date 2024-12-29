@@ -1,5 +1,4 @@
-#![allow(warnings)]
-use memoize::memoize;
+// #![allow(warnings)]
 use std::fmt::Display;
 
 fn main() {
@@ -51,21 +50,8 @@ fn input_to_answer(s: &str) -> i64 {
     let w = World::try_from(s).unwrap();
     let w = w.clone();
     let correct_output: Output = w.program.clone().into();
-    // let solutions = (24542800..2454287100)
-    //     .collect::<Vec<i64>>()
-    //     .into_par_iter()
-    //     .filter(|i| {
-    //         println!("{i}");
-    //         if let Some(result) = w.clone().init_with(*i).execute(&correct_output) {
-    //             let output = result.output;
-    //             output == correct_output
-    //         } else {
-    //             false
-    //         }
-    //     })
-    //     .collect::<Vec<i64>>();
-    // solutions[0]
-    for i in 212712180..100_000_000_000_000 {
+    for i in 301999641..100_000_000_000_000 {
+        // for i in 0..100_000_000_000_000 {
         println!("{i}");
         if let Some(result) = w.clone().init_with(i).execute(&correct_output) {
             let output = result.output;
@@ -179,61 +165,60 @@ impl World {
         }
     }
 
-    fn apply_instruction(self, instruction: Instruction) -> Self {
-        let mut result = self.clone();
+    fn apply_instruction(mut self, instruction: Instruction) -> Self {
         match instruction {
             Instruction::Adv(c) => {
                 // The adv instruction (opcode 0) performs division. The numerator is the value in the A register. The denominator is found by raising 2 to the power of the instruction's combo operand. (So, an operand of 2 would divide A by 4 (2^2); an operand of 5 would divide A by 2^B.) The result of the division operation is truncated to an integer and then written to the A register.
-                let x = self.registers.a / 2_i64.pow(c.calc(&self).try_into().unwrap());
-                result.registers.a = x;
-                result.pointer = self.pointer.next();
+                let x = self.registers.a / (2 << (c.calc(&self)) - 1);
+                self.registers.a = x;
+                self.pointer = self.pointer.next();
             }
             Instruction::Bxl(l) => {
                 // The bxl instruction (opcode 1) calculates the bitwise XOR of register B and the instruction's literal operand, then stores the result in register B.
                 let x = self.registers.b ^ l.0 as i64;
-                result.registers.b = x;
-                result.pointer = self.pointer.next();
+                self.registers.b = x;
+                self.pointer = self.pointer.next();
             }
             Instruction::Bst(c) => {
                 // The bst instruction (opcode 2) calculates the value of its combo operand modulo 8 (thereby keeping only its lowest 3 bits), then writes that value to the B register.
                 let x = c.calc(&self).rem_euclid(8);
-                result.registers.b = x;
-                result.pointer = self.pointer.next();
+                self.registers.b = x;
+                self.pointer = self.pointer.next();
             }
             Instruction::Jnz(p) => {
                 // The jnz instruction (opcode 3) does nothing if the A register is 0. However, if the A register is not zero, it jumps by setting the instruction pointer to the value of its literal operand; if this instruction jumps, the instruction pointer is not increased by 2 after this instruction.
                 if self.registers.a == 0 {
-                    result.pointer = self.pointer.next();
+                    self.pointer = self.pointer.next();
                 } else {
-                    result.pointer = p;
+                    self.pointer = p;
                 }
             }
             Instruction::Bxc(_) => {
                 // The bxc instruction (opcode 4) calculates the bitwise XOR of register B and register C, then stores the result in register B. (For legacy reasons, this instruction reads an operand but ignores it.)
                 let x = self.registers.b ^ self.registers.c;
-                result.registers.b = x;
-                result.pointer = self.pointer.next();
+                self.registers.b = x;
+                self.pointer = self.pointer.next();
             }
             Instruction::Out(c) => {
                 // The out instruction (opcode 5) calculates the value of its combo operand modulo 8, then outputs that value. (If a program outputs multiple values, they are separated by commas.)
                 let x = c.calc(&self).rem_euclid(8);
-                result.output.0.push(x);
-                result.pointer = self.pointer.next();
+                self.output.0.push(x);
+                self.pointer = self.pointer.next();
             }
             Instruction::Bdv(c) => {
                 // The bdv instruction (opcode 6) works exactly like the adv instruction except that the result is stored in the B register. (The numerator is still read from the A register.)
                 let x = self.registers.a / 2_i64.pow(c.calc(&self).try_into().unwrap());
-                result.registers.b = x;
-                result.pointer = self.pointer.next();
+                self.registers.b = x;
+                self.pointer = self.pointer.next();
             }
             Instruction::Cdv(c) => {
                 // The cdv instruction (opcode 7) works exactly like the adv instruction except that the result is stored in the C register. (The numerator is still read from the A register.)
                 let x = self.registers.a / 2_i64.pow(c.calc(&self).try_into().unwrap());
-                result.registers.c = x;
-                result.pointer = self.pointer.next();
+                self.registers.c = x;
+                self.pointer = self.pointer.next();
             }
         };
-        result
+        self
     }
 }
 
