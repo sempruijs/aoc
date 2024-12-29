@@ -1,4 +1,5 @@
 #![allow(warnings)]
+use memoize::memoize;
 use std::fmt::Display;
 
 fn main() {
@@ -13,7 +14,7 @@ impl From<Program> for Output {
             program
                 .0
                 .iter()
-                .fold(Vec::new(), |mut acc: Vec<i32>, instruction| {
+                .fold(Vec::new(), |mut acc: Vec<i64>, instruction| {
                     let (a, b) = match instruction {
                         Instruction::Adv(c) => (0, c.0),
                         Instruction::Bxl(l) => (1, l.0),
@@ -32,8 +33,8 @@ impl From<Program> for Output {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-struct Output(Vec<i32>);
+#[derive(Debug, Clone, PartialEq, Hash)]
+struct Output(Vec<i64>);
 
 impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -46,28 +47,44 @@ impl Display for Output {
     }
 }
 
-fn input_to_answer(s: &str) -> i32 {
+fn input_to_answer(s: &str) -> i64 {
     let w = World::try_from(s).unwrap();
     let w = w.clone();
     let correct_output: Output = w.program.clone().into();
-    for i in 9999999..1000000000 {
+    // let solutions = (24542800..2454287100)
+    //     .collect::<Vec<i64>>()
+    //     .into_par_iter()
+    //     .filter(|i| {
+    //         println!("{i}");
+    //         if let Some(result) = w.clone().init_with(*i).execute(&correct_output) {
+    //             let output = result.output;
+    //             output == correct_output
+    //         } else {
+    //             false
+    //         }
+    //     })
+    //     .collect::<Vec<i64>>();
+    // solutions[0]
+    for i in 212712180..100_000_000_000_000 {
         println!("{i}");
-        let result: Output = w.clone().init_with(i).execute().output;
-        if result == correct_output {
-            return i;
+        if let Some(result) = w.clone().init_with(i).execute(&correct_output) {
+            let output = result.output;
+            if output == correct_output {
+                return i;
+            }
         }
     }
     panic!("not found")
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 struct Registers {
-    a: i32,
-    b: i32,
-    c: i32,
+    a: i64,
+    b: i64,
+    c: i64,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 struct Pointer(u8);
 
 impl Pointer {
@@ -76,12 +93,12 @@ impl Pointer {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Combo(u8);
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 struct Literal(u8);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 struct World {
     pointer: Pointer,
     registers: Registers,
@@ -89,7 +106,7 @@ struct World {
     program: Program,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 enum Instruction {
     Adv(Combo),
     Bxl(Literal),
@@ -102,8 +119,8 @@ enum Instruction {
 }
 
 impl Combo {
-    fn calc(&self, w: &World) -> i32 {
-        let x: i32 = self.0.into();
+    fn calc(&self, w: &World) -> i64 {
+        let x: i64 = self.0.into();
         if x >= 0 && x <= 3 {
             return x;
         }
@@ -117,11 +134,11 @@ impl Combo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 struct Program(Vec<Instruction>);
 
 impl World {
-    fn init_with(self, i: i32) -> Self {
+    fn init_with(self, i: i64) -> Self {
         Self {
             program: self.program,
             output: self.output,
@@ -146,10 +163,19 @@ impl World {
             .map(|instruction: &Instruction| instruction.clone())
     }
 
-    fn execute(self) -> Self {
+    fn execute(self, correct_output: &Output) -> Option<Self> {
+        if self
+            .output
+            .0
+            .iter()
+            .enumerate()
+            .any(|(i, n)| correct_output.0[i] != *n)
+        {
+            return None;
+        }
         match self.current_instruction() {
-            Some(instruction) => self.apply_instruction(instruction).execute(),
-            None => self,
+            Some(instruction) => self.apply_instruction(instruction).execute(correct_output),
+            None => Some(self),
         }
     }
 
@@ -158,13 +184,13 @@ impl World {
         match instruction {
             Instruction::Adv(c) => {
                 // The adv instruction (opcode 0) performs division. The numerator is the value in the A register. The denominator is found by raising 2 to the power of the instruction's combo operand. (So, an operand of 2 would divide A by 4 (2^2); an operand of 5 would divide A by 2^B.) The result of the division operation is truncated to an integer and then written to the A register.
-                let x = self.registers.a / 2_i32.pow(c.calc(&self).try_into().unwrap());
+                let x = self.registers.a / 2_i64.pow(c.calc(&self).try_into().unwrap());
                 result.registers.a = x;
                 result.pointer = self.pointer.next();
             }
             Instruction::Bxl(l) => {
                 // The bxl instruction (opcode 1) calculates the bitwise XOR of register B and the instruction's literal operand, then stores the result in register B.
-                let x = self.registers.b ^ l.0 as i32;
+                let x = self.registers.b ^ l.0 as i64;
                 result.registers.b = x;
                 result.pointer = self.pointer.next();
             }
@@ -196,13 +222,13 @@ impl World {
             }
             Instruction::Bdv(c) => {
                 // The bdv instruction (opcode 6) works exactly like the adv instruction except that the result is stored in the B register. (The numerator is still read from the A register.)
-                let x = self.registers.a / 2_i32.pow(c.calc(&self).try_into().unwrap());
+                let x = self.registers.a / 2_i64.pow(c.calc(&self).try_into().unwrap());
                 result.registers.b = x;
                 result.pointer = self.pointer.next();
             }
             Instruction::Cdv(c) => {
                 // The cdv instruction (opcode 7) works exactly like the adv instruction except that the result is stored in the C register. (The numerator is still read from the A register.)
-                let x = self.registers.a / 2_i32.pow(c.calc(&self).try_into().unwrap());
+                let x = self.registers.a / 2_i64.pow(c.calc(&self).try_into().unwrap());
                 result.registers.c = x;
                 result.pointer = self.pointer.next();
             }
@@ -250,9 +276,9 @@ impl TryFrom<&str> for World {
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let (left, right) = s.split_once("\n\n").unwrap();
-        let registers: Vec<i32> = left
+        let registers: Vec<i64> = left
             .lines()
-            .map(|l| l.split_once(": ").unwrap().1.parse::<i32>().unwrap())
+            .map(|l| l.split_once(": ").unwrap().1.parse::<i64>().unwrap())
             .collect();
         let registers = Registers {
             a: registers[0],
