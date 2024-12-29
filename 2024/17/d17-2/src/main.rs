@@ -1,10 +1,35 @@
-// #![allow(warnings)]
+#![allow(warnings)]
 use std::fmt::Display;
 
 fn main() {
     let input = include_str!("../../input.txt");
     let answer = input_to_answer(input);
     println!("The answer is: {}", answer);
+}
+
+impl From<Program> for Output {
+    fn from(program: Program) -> Self {
+        Self(
+            program
+                .0
+                .iter()
+                .fold(Vec::new(), |mut acc: Vec<i32>, instruction| {
+                    let (a, b) = match instruction {
+                        Instruction::Adv(c) => (0, c.0),
+                        Instruction::Bxl(l) => (1, l.0),
+                        Instruction::Bst(c) => (2, c.0),
+                        Instruction::Jnz(p) => (3, p.0),
+                        Instruction::Bxc(l) => (4, l.0),
+                        Instruction::Out(c) => (5, c.0),
+                        Instruction::Bdv(c) => (6, c.0),
+                        Instruction::Cdv(c) => (7, c.0),
+                    };
+                    acc.push(a.into());
+                    acc.push(b.into());
+                    acc
+                }),
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -21,9 +46,18 @@ impl Display for Output {
     }
 }
 
-fn input_to_answer(s: &str) -> Output {
+fn input_to_answer(s: &str) -> i32 {
     let w = World::try_from(s).unwrap();
-    w.execute()
+    let w = w.clone();
+    let correct_output: Output = w.program.clone().into();
+    for i in 9999999..1000000000 {
+        println!("{i}");
+        let result: Output = w.clone().init_with(i).execute().output;
+        if result == correct_output {
+            return i;
+        }
+    }
+    panic!("not found")
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -61,7 +95,7 @@ enum Instruction {
     Bxl(Literal),
     Bst(Combo),
     Jnz(Pointer),
-    Bxc,
+    Bxc(Literal),
     Out(Combo),
     Bdv(Combo),
     Cdv(Combo),
@@ -87,6 +121,19 @@ impl Combo {
 struct Program(Vec<Instruction>);
 
 impl World {
+    fn init_with(self, i: i32) -> Self {
+        Self {
+            program: self.program,
+            output: self.output,
+            pointer: self.pointer,
+            registers: Registers {
+                a: i,
+                b: self.registers.b,
+                c: self.registers.c,
+            },
+        }
+    }
+
     fn current_instruction(&self) -> Option<Instruction> {
         if self.pointer.0.rem_euclid(2) == 1 {
             println!("Returned none because the pointer did not reference to an instruction");
@@ -99,10 +146,10 @@ impl World {
             .map(|instruction: &Instruction| instruction.clone())
     }
 
-    fn execute(self) -> Output {
+    fn execute(self) -> Self {
         match self.current_instruction() {
             Some(instruction) => self.apply_instruction(instruction).execute(),
-            None => self.output,
+            None => self,
         }
     }
 
@@ -135,7 +182,7 @@ impl World {
                     result.pointer = p;
                 }
             }
-            Instruction::Bxc => {
+            Instruction::Bxc(_) => {
                 // The bxc instruction (opcode 4) calculates the bitwise XOR of register B and register C, then stores the result in register B. (For legacy reasons, this instruction reads an operand but ignores it.)
                 let x = self.registers.b ^ self.registers.c;
                 result.registers.b = x;
@@ -186,7 +233,7 @@ impl TryFrom<&str> for Program {
                         1 => Instruction::Bxl(Literal(b)),
                         2 => Instruction::Bst(Combo(b)),
                         3 => Instruction::Jnz(Pointer(b)),
-                        4 => Instruction::Bxc,
+                        4 => Instruction::Bxc(Literal(b)),
                         5 => Instruction::Out(Combo(b)),
                         6 => Instruction::Bdv(Combo(b)),
                         7 => Instruction::Cdv(Combo(b)),
