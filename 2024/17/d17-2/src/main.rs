@@ -2,7 +2,7 @@
 use std::fmt::Display;
 
 fn main() {
-    let input = include_str!("../../input.txt");
+    let input = include_str!("../../example.txt");
     let answer = input_to_answer(input);
     println!("The answer is: {}", answer);
 }
@@ -50,17 +50,16 @@ fn input_to_answer(s: &str) -> i64 {
     let w = World::try_from(s).unwrap();
     let w = w.clone();
     let correct_output: Output = w.program.clone().into();
-    for i in 301999641..100_000_000_000_000 {
-        // for i in 0..100_000_000_000_000 {
-        println!("{i}");
-        if let Some(result) = w.clone().init_with(i).execute(&correct_output) {
-            let output = result.output;
-            if output == correct_output {
-                return i;
-            }
-        }
-    }
-    panic!("not found")
+    // 2130975800
+    // for i in 0..10000 {
+    //     let output = w.clone().init_with(i).execute().output;
+    //     println!("{:b} | {i} | {output}", i);
+    //     if output == correct_output {
+    //         return i;
+    //     }
+    // }
+    // panic!("bla")
+    w.answer(0, 0, &correct_output).expect("no answer found")
 }
 
 #[derive(Debug, Clone, PartialEq, Hash)]
@@ -124,6 +123,38 @@ impl Combo {
 struct Program(Vec<Instruction>);
 
 impl World {
+    fn answer(&self, digid: usize, minimum: i64, correct_order: &Output) -> Option<i64> {
+        // base case
+        let output = self.clone().init_with(minimum).execute().output;
+        // println!("{output}");
+        if output == *correct_order {
+            return Some(minimum);
+        }
+
+        (6..8)
+            .inspect(|x| println!("Digid is: {digid} and i is: {x}"))
+            .map(|x| {
+                let y = match digid {
+                    0 => minimum << 5,
+                    _ => minimum << 4,
+                };
+                x + y
+            })
+            .filter_map(|x| {
+                let output = self.clone().init_with(x).execute().output;
+                let index = match digid {
+                    0 => 0,
+                    x => x - 1,
+                };
+                if output.0.get(index) == Some(correct_order.0.get(digid).unwrap()) {
+                    Some(self.answer(digid + 1, minimum, correct_order))
+                } else {
+                    None
+                }
+            })
+            .min()?
+    }
+
     fn init_with(self, i: i64) -> Self {
         Self {
             program: self.program,
@@ -149,19 +180,10 @@ impl World {
             .map(|instruction: &Instruction| instruction.clone())
     }
 
-    fn execute(self, correct_output: &Output) -> Option<Self> {
-        if self
-            .output
-            .0
-            .iter()
-            .enumerate()
-            .any(|(i, n)| correct_output.0[i] != *n)
-        {
-            return None;
-        }
+    fn execute(self) -> Self {
         match self.current_instruction() {
-            Some(instruction) => self.apply_instruction(instruction).execute(correct_output),
-            None => Some(self),
+            Some(instruction) => self.apply_instruction(instruction).execute(),
+            None => self,
         }
     }
 
