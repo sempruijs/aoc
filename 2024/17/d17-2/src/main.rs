@@ -2,10 +2,10 @@
 use std::fmt::Display;
 
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let w = World::try_from(input).unwrap();
     let correct = Output::from(w.program.clone());
-    let answer = w.answer(0, 0, &correct).unwrap();
+    let answer = w.answer(correct.0.len() - 1, 0, &correct).unwrap();
     println!("The answer is: {}", answer);
     // for i in 0..50000 {
     //     let w = w.clone().init_with(i).execute();
@@ -120,7 +120,7 @@ impl World {
 
         for x in 0..8 {
             let correct_value = correct.0[digid];
-            let n = (x << 3 * (digid + 1)) + minimum;
+            let n = (x << 3 * (digid)) + minimum;
             let output = self.clone().init_with(n).execute().output;
             println!("output: {output}");
             let my_value = output.0.get(digid as usize);
@@ -130,7 +130,7 @@ impl World {
             // println!("correct: {correct_value} | value: {my_value}");
 
             if my_value == Some(&correct_value) {
-                if let Some(x) = self.answer(digid + 1, n, correct) {
+                if let Some(x) = self.answer(digid - 1, n, correct) {
                     return Some(x);
                 }
             }
