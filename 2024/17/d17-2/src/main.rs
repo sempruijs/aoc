@@ -120,9 +120,7 @@ impl World {
 
         for x in 0..8 {
             let correct_value = correct.0[digid];
-            let n = match digid {
-                _ => (x << 3 * (digid + 2)) + minimum,
-            };
+            let n = (x << 3 * (digid + 1)) + minimum;
             let output = self.clone().init_with(n).execute().output;
             println!("output: {output}");
             let my_value = output.0.get(digid as usize);
