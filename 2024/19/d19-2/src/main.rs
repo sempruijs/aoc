@@ -1,3 +1,6 @@
+use std::mem;
+
+use memoize::memoize;
 use rayon::prelude::*;
 
 fn main() {
@@ -11,10 +14,10 @@ fn input_to_answer(s: &str) -> usize {
     w.answer()
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Towel(String);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Towels(Vec<Towel>);
 
 impl From<&str> for Towels {
@@ -39,12 +42,12 @@ impl World {
             .into_iter()
             .enumerate()
             .inspect(|(i, c)| println!("{i}, {}", c.0))
-            .filter(|(_, c)| {
-                let towels = self.towels.clone().get_useful(c);
+            .map(|(_, c)| {
+                let towels = self.towels.clone().get_useful(&c);
                 println!("{}", c.0);
-                c.valid(&towels)
+                valid_amount(c, towels)
             })
-            .count()
+            .sum()
     }
 }
 
@@ -73,6 +76,7 @@ impl TryFrom<&str> for World {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Combination(String);
 
 struct Combinations(Vec<Combination>);
@@ -83,25 +87,30 @@ impl From<&str> for Combinations {
     }
 }
 
-impl Combination {
-    fn valid(&self, towels: &Towels) -> bool {
-        // base case
-        if self.0.is_empty() {
-            return true;
-        }
-        if towels.0.iter().all(|t| !self.0.ends_with(&t.0))
-            || towels.0.iter().all(|t| !self.0.starts_with(&t.0))
-        {
-            return false;
-        }
-
-        towels.0.iter().any(|towel| {
-            if self.0.starts_with(&towel.0) {
-                let combination = Combination(self.0[towel.0.len()..].to_string());
-                let towels = &towels.clone().get_useful(&combination);
-                return combination.valid(towels);
-            }
-            return false;
-        })
+#[memoize]
+fn valid_amount(combination: Combination, towels: Towels) -> usize {
+    // base case
+    if combination.0.is_empty() {
+        return 1;
     }
+    if towels.0.iter().all(|t| !combination.0.ends_with(&t.0))
+        || towels.0.iter().all(|t| !combination.0.starts_with(&t.0))
+    {
+        return 0;
+    }
+
+    towels
+        .0
+        .iter()
+        .map(|towel| {
+            if combination.0.starts_with(&towel.0) {
+                let combination = Combination(combination.0[towel.0.len()..].to_string());
+                let towels = &towels.clone().get_useful(&combination);
+                return valid_amount(combination, towels.clone());
+            }
+            return 0;
+        })
+        .sum()
 }
+
+impl Combination {}
