@@ -47,9 +47,10 @@ impl TryFrom<&str> for World {
                 }
                 '.' => {
                     Dir::all().into_iter().for_each(|d| {
-                        let p2 = p.transform(&d);
-                        if hm.get(&p) == Some(&'.') {
-                            edges.push(((*p).into(), p2.into(), 1));
+                        if let Some(p2) = p.transform(&d) {
+                            if hm.get(&p) == Some(&'.') {
+                                edges.push(((*p).into(), p2.into(), 1));
+                            }
                         }
                     });
                 }
@@ -113,39 +114,72 @@ impl Dir {
 }
 
 impl Point {
-    fn transform(&self, dir: &Dir) -> Self {
-        match dir {
-            Dir::Up => Self {
+    fn transform(&self, dir: &Dir) -> Option<Self> {
+        if (dir == &Dir::Up && self.y == 0) || (dir == &Dir::Left && self.x == 0) {
+            return None;
+        }
+
+        let result = match dir {
+            Dir::Up => Point {
                 x: self.x,
                 y: self.y - 1,
             },
-            Dir::Left => Self {
+            Dir::Left => Point {
                 x: self.x - 1,
                 y: self.y,
             },
-            Dir::Down => Self {
+            Dir::Down => Point {
                 x: self.x,
                 y: self.y + 1,
             },
-            Dir::Right => Self {
+            Dir::Right => Point {
                 x: self.x + 1,
                 y: self.y,
             },
-        }
+        };
+        Some(result)
     }
 }
 
 impl World {
     fn to_cheat_worlds(&self) -> Vec<World> {
-        todo!()
+        self.get_all_cheats_edges()
+            .into_iter()
+            .map(|e| {
+                let mut g = self.g.clone();
+                g.add_edge(e.0.into(), e.1.into(), 2);
+                World {
+                    g,
+                    start: self.start,
+                    end: self.end,
+                }
+            })
+            .collect()
     }
 
-    fn get_all_cheats_edges(&self) -> (Point, Point, u32) {
-        todo!()
+    fn get_all_cheats_edges(&self) -> Vec<(Point, Point)> {
+        self.g
+            .node_indices()
+            .flat_map(|node_index| {
+                let p = Point::from(node_index);
+                Dir::all()
+                    .into_iter()
+                    .filter_map(|d| {
+                        if let Some(p2) = p.transform(&d) {
+                            if let Some(p2) = p2.transform(&d) {
+                                return Some((p, p2));
+                            }
+                        }
+                        None
+                    })
+                    .collect::<Vec<(Point, Point)>>()
+            })
+            .collect()
     }
 
     fn shortest_path(&self) -> usize {
-        todo!()
+        let dijkstra = dijkstra(&self.g, self.start.into(), None, |_| 1);
+        *dijkstra.get(&self.end.into()).unwrap()
     }
 
     fn time_saved(&self, normal_time: usize) -> usize {
