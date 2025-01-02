@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+petgraph = "0.7.0"
+radsort = "0.1.1"

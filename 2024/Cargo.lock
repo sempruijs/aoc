@@ -281,6 +281,10 @@ dependencies = [
 [[package]]
 name = "d20-1"
 version = "0.1.0"
+dependencies = [
+ "petgraph 0.7.0",
+ "radsort",
+]
 
 [[package]]
 name = "either"
