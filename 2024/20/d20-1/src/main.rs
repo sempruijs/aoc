@@ -1,12 +1,36 @@
 #![allow(warnings)]
 use petgraph::algo::dijkstra;
 use petgraph::algo::has_path_connecting;
+use petgraph::algo::matching;
 use petgraph::graph::Node;
 use petgraph::graph::{NodeIndex, UnGraph};
+use petgraph::visit::IntoNodeIdentifiers;
+use petgraph::visit::IntoNodeReferences;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
 
+struct Points(Vec<Point>);
+
+impl From<&str> for Points {
+    fn from(s: &str) -> Self {
+        Self(
+            s.lines()
+                .enumerate()
+                .flat_map(|(y, l)| {
+                    l.chars()
+                        .enumerate()
+                        .filter(|(_, c)| c == &'.')
+                        .map(|(x, _)| Point {
+                            x: x as u16,
+                            y: y as u16,
+                        })
+                        .collect::<Vec<Point>>()
+                })
+                .collect(),
+        )
+    }
+}
 fn main() {
     let input = include_str!("../../example.txt");
     let answer = input_to_answer(input);
@@ -41,9 +65,23 @@ impl TryFrom<&str> for World {
             match c {
                 'S' => {
                     start = *p;
+                    Dir::all().into_iter().for_each(|d| {
+                        if let Some(p2) = p.transform(&d) {
+                            if hm.get(&p) == Some(&'.') {
+                                edges.push(((*p).into(), p2.into(), 1));
+                            }
+                        }
+                    })
                 }
                 'E' => {
                     end = *p;
+                    Dir::all().into_iter().for_each(|d| {
+                        if let Some(p2) = p.transform(&d) {
+                            if hm.get(&p) == Some(&'.') {
+                                edges.push(((*p).into(), p2.into(), 1));
+                            }
+                        }
+                    })
                 }
                 '.' => {
                     Dir::all().into_iter().for_each(|d| {
@@ -65,11 +103,8 @@ impl TryFrom<&str> for World {
 
 fn input_to_answer(s: &str) -> usize {
     let w = World::try_from(s).unwrap();
-    let normal_time = w.shortest_path();
-    w.to_cheat_worlds()
-        .into_iter()
-        .filter(|w| w.time_saved(normal_time) >= 100)
-        .count()
+    let points = Points::from(s);
+    w.fast_shortcut_amount(2, points)
 }
 
 struct World {
@@ -107,6 +142,12 @@ enum Dir {
     Left,
 }
 
+impl Display for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
+}
+
 impl Dir {
     fn all() -> Vec<Dir> {
         vec![Dir::Up, Dir::Right, Dir::Down, Dir::Left]
@@ -141,48 +182,45 @@ impl Point {
     }
 }
 
+impl Point {
+    fn distance(&self, p2: &Point) -> u16 {
+        self.x.abs_diff(p2.x) + self.y.abs_diff(p2.y)
+    }
+}
+
 impl World {
-    fn to_cheat_worlds(&self) -> Vec<World> {
-        self.get_all_cheats_edges()
+    fn fast_shortcut_amount(&self, minimum_time_saved: i32, points: Points) -> usize {
+        let dijkstra = dijkstra(&self.g, self.start.into(), None, |_| 1);
+        self.get_all_cheats_edges(points)
             .into_iter()
-            .map(|e| {
-                let mut g = self.g.clone();
-                g.add_edge(e.0.into(), e.1.into(), 2);
-                World {
-                    g,
-                    start: self.start,
-                    end: self.end,
+            .filter(|(p1, p2)| {
+                if let Some(distance_a) = dijkstra.get(&(*p1).into()) {
+                    if let Some(distance_b) = dijkstra.get(&(*p2).into()) {
+                        let dif = (distance_a - distance_b) >= minimum_time_saved;
+                        return dif;
+                    }
                 }
+                false
             })
-            .collect()
+            .count()
     }
 
-    fn get_all_cheats_edges(&self) -> Vec<(Point, Point)> {
-        self.g
-            .node_indices()
-            .flat_map(|node_index| {
-                let p = Point::from(node_index);
-                Dir::all()
+    fn get_all_cheats_edges(&self, points: Points) -> Vec<(Point, Point)> {
+        points
+            .0
+            .clone()
+            .into_iter()
+            .flat_map(|p1| {
+                points
+                    .0
+                    .clone()
                     .into_iter()
-                    .filter_map(|d| {
-                        if let Some(p2) = p.transform(&d) {
-                            if let Some(p2) = p2.transform(&d) {
-                                return Some((p, p2));
-                            }
-                        }
-                        None
+                    .filter_map(|p2| match p1.distance(&p2) == 2 {
+                        true => Some((p1, p2)),
+                        false => None,
                     })
                     .collect::<Vec<(Point, Point)>>()
             })
             .collect()
-    }
-
-    fn shortest_path(&self) -> usize {
-        let dijkstra = dijkstra(&self.g, self.start.into(), None, |_| 1);
-        *dijkstra.get(&self.end.into()).unwrap()
-    }
-
-    fn time_saved(&self, normal_time: usize) -> usize {
-        normal_time - self.shortest_path()
     }
 }
