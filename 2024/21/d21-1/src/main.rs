@@ -75,17 +75,62 @@ enum Pad {
 
 struct Arm(Point);
 
-struct Room {
-    keys: Pad,
+struct Code(Vec<NumPadKey>);
+
+trait GoTo<K> {
+    fn go_to(self, key: &K) -> (Instructions, Self);
+}
+
+impl GoTo<NumPadKey> for NumPadRoom {
+    fn go_to(self, key: &NumPadKey) -> (Instructions, Self) {
+        todo!()
+    }
+}
+
+impl GoTo<DPadKey> for DPadRoom {
+    fn go_to(self, key: &DPadKey) -> (Instructions, Self) {
+        todo!()
+    }
+}
+
+struct NumPadRoom {
+    key_pad: HashMap<NumPadKey, Point>,
     arm: Arm,
 }
 
-struct Code(Vec<NumPadKey>);
+struct DPadRoom {
+    key_pad: HashMap<NumPadKey, Point>,
+    arm: Arm,
+}
 
-struct Rooms(Vec<Room>);
+struct Rooms {
+    base: NumPadRoom,
+    layers: Vec<DPadRoom>,
+}
 
 impl Code {
     fn instructions(&self, rooms: Rooms) -> (Instructions, Rooms) {
+        // get base instructions
+        // these instructions are executed on inside the numpad room.
+        let (base_instructions, base) =
+            self.0
+                .iter()
+                .fold((Vec::new(), rooms.base), |(mut instructions, base), key| {
+                    let (new_instructions, base) = base.go_to(key);
+                    instructions.extend(new_instructions.0);
+                    (instructions, base)
+                });
+        rooms.layers.into_iter().fold((base_instructions, base), |(mut instructions, layer)| {
+            // fold into instructions for specefic layer
+            let (instructions, room) =
+            instructions
+                // .iter()
+                // .fold((Vec::new(), layer), |(mut instructions, layer), key| {
+                //     let (instructions, layer) = layer.go_to(key);
+                //     instructions.extend(new_instructions.0);
+                //     (instructions, layer)
+                // });
+        })
         todo!()
     }
 
