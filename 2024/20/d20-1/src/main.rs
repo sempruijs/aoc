@@ -2,6 +2,7 @@
 use petgraph::algo::dijkstra;
 use petgraph::algo::has_path_connecting;
 use petgraph::algo::matching;
+use petgraph::dot::{Config, Dot};
 use petgraph::graph::Node;
 use petgraph::graph::{NodeIndex, UnGraph};
 use petgraph::visit::IntoNodeIdentifiers;
@@ -10,6 +11,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
 
+#[derive(Debug, Clone)]
 struct Points(Vec<Point>);
 
 impl From<&str> for Points {
@@ -20,7 +22,7 @@ impl From<&str> for Points {
                 .flat_map(|(y, l)| {
                     l.chars()
                         .enumerate()
-                        .filter(|(_, c)| c == &'.')
+                        .filter(|(_, c)| c != &'#')
                         .map(|(x, _)| Point {
                             x: x as u16,
                             y: y as u16,
@@ -32,7 +34,7 @@ impl From<&str> for Points {
     }
 }
 fn main() {
-    let input = include_str!("../../example.txt");
+    let input = include_str!("../../input.txt");
     let answer = input_to_answer(input);
     println!("The answer is: {answer}");
 }
@@ -57,45 +59,49 @@ impl TryFrom<&str> for World {
                     .collect::<Vec<(Point, char)>>()
             })
             .collect::<HashMap<Point, char>>();
-        let mut start = Point::default();
-        let mut end = Point::default();
-        let mut edges: Vec<(NodeIndex, NodeIndex, u32)> = Vec::new();
 
-        for (p, c) in &hm {
-            match c {
-                'S' => {
-                    start = *p;
-                    Dir::all().into_iter().for_each(|d| {
-                        if let Some(p2) = p.transform(&d) {
-                            if hm.get(&p) == Some(&'.') {
-                                edges.push(((*p).into(), p2.into(), 1));
-                            }
+        let start = hm
+            .iter()
+            .filter(|(_, v)| v == &&'S')
+            .next()
+            .unwrap()
+            .0
+            .clone();
+
+        let end = hm
+            .iter()
+            .filter(|(_, v)| v == &&'E')
+            .next()
+            .unwrap()
+            .0
+            .clone();
+
+        let points: HashSet<Point> = hm
+            .iter()
+            .filter(|(_, v)| v != &&'#')
+            .map(|(k, _)| k)
+            .cloned()
+            .collect();
+
+        let edges: Vec<(NodeIndex, NodeIndex, u32)> = points
+            .clone()
+            .into_iter()
+            .flat_map(|p| {
+                Dir::all()
+                    .iter()
+                    .filter_map(|d| {
+                        if let Some(p2) = p.transform(d) {
+                            return match points.get(&p2) {
+                                Some(p2) => Some((p.into(), (*p2).into(), 1)),
+                                None => None,
+                            };
                         }
+                        None
                     })
-                }
-                'E' => {
-                    end = *p;
-                    Dir::all().into_iter().for_each(|d| {
-                        if let Some(p2) = p.transform(&d) {
-                            if hm.get(&p) == Some(&'.') {
-                                edges.push(((*p).into(), p2.into(), 1));
-                            }
-                        }
-                    })
-                }
-                '.' => {
-                    Dir::all().into_iter().for_each(|d| {
-                        if let Some(p2) = p.transform(&d) {
-                            if hm.get(&p) == Some(&'.') {
-                                edges.push(((*p).into(), p2.into(), 1));
-                            }
-                        }
-                    });
-                }
-                '#' => continue,
-                c => panic!("Found unknown character: {c}"),
-            }
-        }
+                    .collect::<Vec<(NodeIndex, NodeIndex, u32)>>()
+            })
+            .collect();
+
         let g = UnGraph::<Point, u32>::from_edges(edges);
         Ok(Self { end, start, g })
     }
@@ -104,7 +110,7 @@ impl TryFrom<&str> for World {
 fn input_to_answer(s: &str) -> usize {
     let w = World::try_from(s).unwrap();
     let points = Points::from(s);
-    w.fast_shortcut_amount(2, points)
+    w.fast_shortcut_amount(100, points)
 }
 
 struct World {
@@ -196,12 +202,13 @@ impl World {
             .filter(|(p1, p2)| {
                 if let Some(distance_a) = dijkstra.get(&(*p1).into()) {
                     if let Some(distance_b) = dijkstra.get(&(*p2).into()) {
-                        let dif = (distance_a - distance_b) >= minimum_time_saved;
-                        return dif;
+                        let dif = distance_b - distance_a;
+                        return dif - 2 >= minimum_time_saved;
                     }
                 }
                 false
             })
+            .inspect(|(p1, p2)| println!("{p1} -> {p2}"))
             .count()
     }
 
@@ -222,5 +229,28 @@ impl World {
                     .collect::<Vec<(Point, Point)>>()
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_node_index() {
+        let p = Point { x: 0, y: 0 };
+        let expected: NodeIndex = 0.into();
+        let result = NodeIndex::from(p);
+        assert_eq!(result, expected);
+
+        let p = Point { x: 1, y: 0 };
+        let expected: NodeIndex = 65536.into();
+        let result = NodeIndex::from(p);
+        assert_eq!(result, expected);
+
+        let input: NodeIndex = 65536.into();
+        let expected = Point { x: 1, y: 0 };
+        let result = Point::from(input);
+        assert_eq!(result, expected);
     }
 }
