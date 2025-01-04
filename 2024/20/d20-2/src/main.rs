@@ -203,7 +203,8 @@ impl World {
                 if let Some(distance_a) = dijkstra.get(&(*p1).into()) {
                     if let Some(distance_b) = dijkstra.get(&(*p2).into()) {
                         let dif = distance_b - distance_a;
-                        return dif - 2 >= minimum_time_saved;
+                        let cheat_path_length = p1.distance(p2) as i32;
+                        return dif - cheat_path_length >= minimum_time_saved;
                     }
                 }
                 false
@@ -222,7 +223,7 @@ impl World {
                     .0
                     .clone()
                     .into_iter()
-                    .filter_map(|p2| match p1.distance(&p2) == 2 {
+                    .filter_map(|p2| match p1.distance(&p2) <= 20 {
                         true => Some((p1, p2)),
                         false => None,
                     })
