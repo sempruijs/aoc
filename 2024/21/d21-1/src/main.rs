@@ -1,5 +1,5 @@
 #![allow(warnings)]
-use std::collections::HashMap;
+use std::{collections::HashMap, thread::Thread};
 
 fn main() {
     let input = include_str!("../../example.txt");
@@ -29,6 +29,7 @@ impl TryFrom<&str> for Codes {
 
 struct Codes(Vec<Code>);
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Point {
     x: u8,
     y: u8,
@@ -46,6 +47,12 @@ enum Instruction {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 struct Instructions(Vec<Instruction>);
 
+impl From<Point> for Instructions {
+    fn from(value: Point) -> Self {
+        todo!()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum NumPadKey {
     Zero,
@@ -61,9 +68,34 @@ enum NumPadKey {
     Press,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Arm(Point);
 
 struct Code(Vec<NumPadKey>);
+
+impl From<&Code> for String {
+    fn from(code: &Code) -> Self {
+        code.0
+            .iter()
+            .fold(String::new(), |mut result, instruction| {
+                let c = match instruction {
+                    &NumPadKey::Zero => '0',
+                    &NumPadKey::One => '1',
+                    &NumPadKey::Two => '2',
+                    &NumPadKey::Three => '3',
+                    &NumPadKey::Four => '4',
+                    &NumPadKey::Five => '5',
+                    &NumPadKey::Six => '6',
+                    &NumPadKey::Seven => '7',
+                    &NumPadKey::Eight => '8',
+                    &NumPadKey::Nine => '9',
+                    &NumPadKey::Press => 'A',
+                };
+                result.push(c);
+                result
+            })
+    }
+}
 
 trait GoTo<K> {
     fn go_to(self, key: &K) -> (Instructions, Self);
@@ -84,13 +116,42 @@ impl DPadRoom {
 
 impl GoTo<NumPadKey> for NumPadRoom {
     fn go_to(self, key: &NumPadKey) -> (Instructions, Self) {
-        todo!()
+        let current = self.arm.0;
+        let destination = self
+            .key_pad
+            .get(key)
+            .expect("Could not recieve position for num pad key: {key}");
+        let instructions = Instructions::from(destination.min(&current));
+        let room = Self {
+            key_pad: self.key_pad.clone(),
+            arm: Arm(destination.clone()),
+        };
+        (instructions, room)
+    }
+}
+
+impl Point {
+    fn min(&self, p: &Point) -> Self {
+        Point {
+            x: self.x - p.x,
+            y: self.y - p.y,
+        }
     }
 }
 
 impl GoTo<Instruction> for DPadRoom {
     fn go_to(self, key: &Instruction) -> (Instructions, Self) {
-        todo!()
+        let current = self.arm.0;
+        let destination = self
+            .key_pad
+            .get(key)
+            .expect("Could not recieve position for num pad key: {key}");
+        let instructions = Instructions::from(destination.min(&current));
+        let room = Self {
+            key_pad: self.key_pad.clone(),
+            arm: Arm(destination.clone()),
+        };
+        (instructions, room)
     }
 }
 
@@ -141,7 +202,12 @@ impl Code {
     }
 
     fn numeric_value(&self) -> usize {
-        todo!()
+        String::from(self)
+            .chars()
+            .filter(|c| c != &'A')
+            .collect::<String>()
+            .parse::<usize>()
+            .unwrap()
     }
 }
 
