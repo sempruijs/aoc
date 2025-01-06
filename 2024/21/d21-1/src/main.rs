@@ -9,11 +9,11 @@ fn main() {
 
 fn input_to_answer(s: &str) -> usize {
     let codes = Codes::try_from(s).unwrap();
-    let rooms = Rooms::default();
-    codes.answer(rooms)
+    let world = World::default();
+    codes.answer(world)
 }
 
-impl Default for Rooms {
+impl Default for World {
     fn default() -> Self {
         todo!()
     }
@@ -34,6 +34,7 @@ struct Point {
     y: u8,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Instruction {
     North,
     East,
@@ -42,6 +43,7 @@ enum Instruction {
     Press,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 struct Instructions(Vec<Instruction>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -59,20 +61,6 @@ enum NumPadKey {
     Press,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum DPadKey {
-    North,
-    East,
-    South,
-    West,
-    Press,
-}
-
-enum Pad {
-    Numbers(HashMap<Point, NumPadKey>),
-    Arrows(HashMap<Point, DPadKey>),
-}
-
 struct Arm(Point);
 
 struct Code(Vec<NumPadKey>);
@@ -81,14 +69,27 @@ trait GoTo<K> {
     fn go_to(self, key: &K) -> (Instructions, Self);
 }
 
+impl DPadRoom {
+    fn apply_instructions(&self, instructions: Instructions) -> (Instructions, Self) {
+        instructions.0.iter().fold(
+            (Instructions::default(), self.clone()),
+            |(mut instructions, layer), instruction| {
+                let (new_instructions, layer) = layer.go_to(instruction);
+                instructions.0.extend(new_instructions.0);
+                (instructions, layer)
+            },
+        )
+    }
+}
+
 impl GoTo<NumPadKey> for NumPadRoom {
     fn go_to(self, key: &NumPadKey) -> (Instructions, Self) {
         todo!()
     }
 }
 
-impl GoTo<DPadKey> for DPadRoom {
-    fn go_to(self, key: &DPadKey) -> (Instructions, Self) {
+impl GoTo<Instruction> for DPadRoom {
+    fn go_to(self, key: &Instruction) -> (Instructions, Self) {
         todo!()
     }
 }
@@ -98,46 +99,45 @@ struct NumPadRoom {
     arm: Arm,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct DPadRoom {
-    key_pad: HashMap<NumPadKey, Point>,
+    key_pad: HashMap<Instruction, Point>,
     arm: Arm,
 }
 
-struct Rooms {
+struct World {
     base: NumPadRoom,
     layers: Vec<DPadRoom>,
 }
 
 impl Code {
-    fn instructions(&self, rooms: Rooms) -> (Instructions, Rooms) {
+    fn instructions(&self, world: World) -> (Instructions, World) {
         // get base instructions
         // these instructions are executed on inside the numpad room.
-        let (base_instructions, base) =
-            self.0
-                .iter()
-                .fold((Vec::new(), rooms.base), |(mut instructions, base), key| {
-                    let (new_instructions, base) = base.go_to(key);
-                    instructions.extend(new_instructions.0);
-                    (instructions, base)
-                });
-        rooms.layers.into_iter().fold((base_instructions, base), |(mut instructions, layer)| {
-            // fold into instructions for specefic layer
-            let (instructions, room) =
-            instructions
-                // .iter()
-                // .fold((Vec::new(), layer), |(mut instructions, layer), key| {
-                //     let (instructions, layer) = layer.go_to(key);
-                //     instructions.extend(new_instructions.0);
-                //     (instructions, layer)
-                // });
-        })
-        todo!()
+        let (base_instructions, base) = self.0.iter().fold(
+            (Instructions::default(), world.base),
+            |(mut instructions, base), key| {
+                let (new_instructions, base) = base.go_to(key);
+                instructions.0.extend(new_instructions.0);
+                (instructions, base)
+            },
+        );
+        let (instructions, layers) = world.layers.iter().fold(
+            (base_instructions, Vec::new()),
+            |(instructions, mut layers), layer| {
+                let (instructions, layer) = layer.apply_instructions(instructions);
+                layers.push(layer);
+                (instructions, layers)
+            },
+        );
+        let world = World { base, layers };
+        (instructions, world)
     }
 
-    fn score(&self, rooms: Rooms) -> (usize, Rooms) {
-        let (instructions, rooms) = self.instructions(rooms);
+    fn score(&self, world: World) -> (usize, World) {
+        let (instructions, world) = self.instructions(world);
         let score = instructions.0.len() * self.numeric_value();
-        (score, rooms)
+        (score, world)
     }
 
     fn numeric_value(&self) -> usize {
@@ -146,10 +146,10 @@ impl Code {
 }
 
 impl Codes {
-    fn answer(&self, rooms: Rooms) -> usize {
+    fn answer(&self, world: World) -> usize {
         self.0
             .iter()
-            .fold((0, rooms), |(_, rooms), code| code.score(rooms))
+            .fold((0, world), |(_, world), code| code.score(world))
             .0
     }
 }
