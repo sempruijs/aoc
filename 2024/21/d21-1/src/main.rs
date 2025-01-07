@@ -113,8 +113,8 @@ struct Codes(Vec<Code>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Point {
-    x: u8,
-    y: u8,
+    x: i8,
+    y: i8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -130,8 +130,19 @@ enum Instruction {
 struct Instructions(Vec<Instruction>);
 
 impl From<Point> for Instructions {
-    fn from(value: Point) -> Self {
-        todo!()
+    fn from(p: Point) -> Self {
+        let instructions_x: Vec<Instruction> = match p.x < 0 {
+            true => (0..p.x.abs()).map(|_| Instruction::West).collect(),
+            false => (0..p.x.abs()).map(|_| Instruction::East).collect(),
+        };
+        let instructions_y: Vec<Instruction> = match p.y < 0 {
+            true => (0..p.y.abs()).map(|_| Instruction::North).collect(),
+            false => (0..p.y.abs()).map(|_| Instruction::South).collect(),
+        };
+        let mut result = Vec::new();
+        result.extend(instructions_x);
+        result.extend(instructions_y);
+        Instructions(result)
     }
 }
 
